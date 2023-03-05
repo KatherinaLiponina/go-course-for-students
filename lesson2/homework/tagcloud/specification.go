@@ -25,17 +25,17 @@ func New() * TagCloud {
 func (t * TagCloud) AddTag(tag string) {
 	for i:= 0; i < t.len; i++ {
 		if t.queue[i].Tag == tag {
-			t.queue[i].OccurrenceCount++;
+			t.queue[i].OccurrenceCount++
 			for i > 0 && t.queue[i].OccurrenceCount > t.queue[i - 1].OccurrenceCount {
 				tmp := t.queue[i];
 				t.queue[i] = t.queue[i-1]
 				t.queue[i-1] = tmp
 			}
-			return;
+			return
 		}
 	}
-	t.len++;
-	t.queue = append(t.queue, TagStat{tag, 1});
+	t.len++
+	t.queue = append(t.queue, TagStat{tag, 1})
 }
 
 // TopN should return top N most frequent tags ordered in descending order by occurrence count
