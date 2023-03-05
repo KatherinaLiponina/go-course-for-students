@@ -2,7 +2,8 @@ package tagcloud
 
 // TagCloud aggregates statistics about used tags
 type TagCloud struct {
-	// TODO: add fields if necessary
+	queue []TagStat
+	len int
 }
 
 // TagStat represents statistics regarding single tag
@@ -12,17 +13,29 @@ type TagStat struct {
 }
 
 // New should create a valid TagCloud instance
-// TODO: You decide whether this function should return a pointer or a value
-func New() TagCloud {
-	// TODO: Implement this
-	return TagCloud{}
+func New() * TagCloud {
+	var t TagCloud
+	t.len = 0
+	t.queue = []TagStat{}
+	return &t
 }
 
 // AddTag should add a tag to the cloud if it wasn't present and increase tag occurrence count
 // thread-safety is not needed
-// TODO: You decide whether receiver should be a pointer or a value
-func (TagCloud) AddTag(tag string) {
-	// TODO: Implement this
+func (t * TagCloud) AddTag(tag string) {
+	for i:= 0; i < t.len; i++ {
+		if t.queue[i].Tag == tag {
+			t.queue[i].OccurrenceCount++;
+			for i > 0 && t.queue[i].OccurrenceCount > t.queue[i - 1].OccurrenceCount {
+				tmp := t.queue[i];
+				t.queue[i] = t.queue[i-1]
+				t.queue[i-1] = tmp
+			}
+			return;
+		}
+	}
+	t.len++;
+	t.queue = append(t.queue, TagStat{tag, 1});
 }
 
 // TopN should return top N most frequent tags ordered in descending order by occurrence count
@@ -30,8 +43,13 @@ func (TagCloud) AddTag(tag string) {
 // if n is greater that TagCloud size then all elements should be returned
 // thread-safety is not needed
 // there are no restrictions on time complexity
-// TODO: You decide whether receiver should be a pointer or a value
-func (TagCloud) TopN(n int) []TagStat {
-	// TODO: Implement this
-	return nil
+func (t * TagCloud) TopN(n int) []TagStat {
+	if n >= t.len {
+		return t.queue
+	}
+	result := []TagStat{}
+	for i := 0; i < n; i++ {
+		result = append(result, t.queue[i])
+	}
+	return result
 }
