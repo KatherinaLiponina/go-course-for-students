@@ -206,7 +206,6 @@ func adjustBuffer(opts *Options, buf []byte, prev []Spaces) ([]byte, []byte, []S
 	}
 	var result []byte = make([]byte, 0)
 	var str string = ""
-
 	//read all data which is not a rune
 	for len(buf) > 0 {
 		r, size := utf8.DecodeRune(buf)
@@ -220,7 +219,6 @@ func adjustBuffer(opts *Options, buf []byte, prev []Spaces) ([]byte, []byte, []S
 		//all buf is an inconsist rune
 		return result, decodeSpaces(prev), nil
 	}
-
 	//decode all correct runes
 	r, size := utf8.DecodeRune(buf)
 	for ; r != utf8.RuneError && buf[0] != '\x00'; r, size = utf8.DecodeRune(buf) {
