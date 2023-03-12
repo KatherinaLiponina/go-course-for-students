@@ -32,6 +32,7 @@ func ParseFlags() (*Options, error) {
 	var convey string
 	const optimalSize = 100
 
+	//define all readable flags with default value
 	flag.StringVar(&opts.From, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.To, "to", "", "file to write. by default - stdout")
 	flag.IntVar(&opts.Offset, "offset", 0, "offset to start reading")
@@ -138,6 +139,7 @@ func DataDefinition(opts *Options) error {
 		}
 	}
 
+	//create a write
 	var writer io.Writer
 	var writingFile *os.File
 	if len(opts.To) == 0 {
@@ -154,39 +156,58 @@ func DataDefinition(opts *Options) error {
 		return errors.New("Cannot initialize Writer")
 	}
 
+	//iterate over all input using blocks by block-size
 	var uncomplete [] byte
 	var spaces [] Spaces = make([]Spaces, 0)
 	
 	for {
+		//read input
 		var block []byte = make([]byte, opts.BlockSize)
 		readSize, err := io.ReadFull(reader, block)
+		//get rid of \x00 if read less then asked
 		if (readSize != len(block)) {
 			block = block[:readSize]
 		}
+		//correct block, separate it on "uncomplete" - data, which shouldn't be wrote
+		//"block" - data that should be wrote
+		//"spaces" - trailing spaces at end
 		uncomplete, block, spaces = adjustBuffer(opts, append(uncomplete, block...), spaces)
 
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				writer.Write(block)
+				//if we're here, all date read, so just write it
+				_, err = writer.Write(block)
+				if err != nil {
+					return err
+				}
 				if uncomplete != nil {
-					writer.Write(uncomplete)
+					_, err = writer.Write(uncomplete)
+					if err != nil {
+						return err
+					}
 				}
 				break
 			}
 			return err
 		}
-		writer.Write(block)
+		//write current block
+		_, err = writer.Write(block)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte, []Spaces) {
+	//if buf is empty - just return
 	if len(buf) == 0 {
 		return nil, []byte{}, nil
 	}
 	var result []byte = make([]byte, 0)
 	var str string = ""
 	
+	//read all data which is not a rune
 	for len(buf) > 0 {
 		r, size := utf8.DecodeRune(buf)
 		if (r != utf8.RuneError) {
@@ -200,9 +221,11 @@ func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte,
 		return result, decodeSpaces(prev), nil
 	}
 	
+	//decode all correct runes
 	r, size := utf8.DecodeRune(buf)
 	for ; r != utf8.RuneError && buf[0] != '\x00'; r, size = utf8.DecodeRune(buf) {
 		var s string = string(r)
+		//correct it if needed
 		if (opts.Upper) {
 			s = strings.ToUpper(s)
 		} else if (opts.Lower) {
@@ -219,23 +242,32 @@ func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte,
 	} else {
 		incomplete = nil
 	}
+	//if not trim return block as all read
 	if (!opts.Trim) {
 		return incomplete, append(result, []byte(str)...), nil
 	}
+	//parse string by spaces (see parseString)
 	st, content, end := parseString(str)
-	newSpaces := decodeSpaces(append(prev, st...))
+	//collect all spaces
+	newSpaces := decodeSpaces(appendSpaces(prev, st))
 	result = append(result, []byte(content)...)
 	if content != "" {
-		//write all spaces
+		//if symbol was met and it just start - drop it
+		//i'm sorry about global variable i'm just scared of amount of arguments which 
+		//just passes by
+		//i'll refactor it... someday
 		if (atStart) {
 			atStart = false
 			return incomplete, result, end
 		}
+		//if symbol was met write all spaces before it
 		return incomplete, append(newSpaces, result...), end 
 	}
-	return incomplete, []byte{}, append(prev, st...)
+	//else just save it for future
+	return incomplete, []byte{}, appendSpaces(prev, st)
 }
 
+//[]Spaces -> []byte
 func decodeSpaces (spaces [] Spaces) ([] byte) {
 	buf := make([]byte, 0)
 	for _, sp := range spaces {
@@ -247,6 +279,16 @@ func decodeSpaces (spaces [] Spaces) ([] byte) {
 	return buf
 }
 
+//like append but smarter
+func appendSpaces(sp1 []Spaces, sp2 [] Spaces) [] Spaces {
+	if len(sp1) > 0 && len(sp2) > 0 && sp1[len(sp1) - 1].char == sp2[0].char {
+		sp1[len(sp1) - 1].amount += sp2[0].amount
+		sp2 = sp2[1:]
+	}
+	return append(sp1, sp2...)
+}
+
+//string -> spaces at start + real data + spaces at end | just spaces
 func parseString(str string) ([] Spaces, string, [] Spaces) {
 	startingSpaces := make([]Spaces, 0)
 	var i int = 0
@@ -263,7 +305,6 @@ func parseString(str string) ([] Spaces, string, [] Spaces) {
 	}
 
 	endingSpaces := make([] Spaces, 0)
-	i = len(str) - 1
 	for r, size := utf8.DecodeLastRune([]byte(str)); unicode.IsSpace(r); r, size = utf8.DecodeLastRune([]byte(str)) {
 		if len(endingSpaces) > 0 && endingSpaces[len(endingSpaces) - 1].char == r {
 			endingSpaces[len(endingSpaces) - 1].amount++
