@@ -30,7 +30,7 @@ type Spaces struct {
 func ParseFlags() (*Options, error) {
 	var opts Options
 	var convey string
-	const optimalSize = 50
+	const optimalSize = 100
 
 	flag.StringVar(&opts.From, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.To, "to", "", "file to write. by default - stdout")
@@ -97,6 +97,8 @@ func ParseFlags() (*Options, error) {
 	return &opts, nil
 }
 
+var atStart bool = true
+
 func DataDefinition(opts *Options) error {
 	//create normal reader from file or input
 	var reader io.Reader
@@ -153,15 +155,19 @@ func DataDefinition(opts *Options) error {
 	}
 
 	var uncomplete [] byte
+	var spaces [] Spaces = make([]Spaces, 0)
 	
 	for {
 		var block []byte = make([]byte, opts.BlockSize)
-		byteReaded, err := io.ReadFull(reader, block)
-		uncomplete, block = adjustBuffer(opts, append(uncomplete, block...))
+		readSize, err := io.ReadFull(reader, block)
+		if (readSize != len(block)) {
+			block = block[:readSize]
+		}
+		uncomplete, block, spaces = adjustBuffer(opts, append(uncomplete, block...), spaces)
 
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				writer.Write(block[:byteReaded])
+				writer.Write(block)
 				if uncomplete != nil {
 					writer.Write(uncomplete)
 				}
@@ -174,12 +180,24 @@ func DataDefinition(opts *Options) error {
 	return nil
 }
 
-func adjustBuffer (opts * Options, buf [] byte) ([]byte, []byte) {
+func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte, []Spaces) {
+	if len(buf) == 0 {
+		return nil, []byte{}, nil
+	}
 	var result []byte = make([]byte, 0)
 	var str string = ""
-	for !utf8.FullRune(buf) {
-		result = append(result, buf[0])
-		buf = buf[1:]
+	
+	for len(buf) > 0 {
+		r, size := utf8.DecodeRune(buf)
+		if (r != utf8.RuneError) {
+			break
+		}
+		result = append(result, buf[:size]...)
+		buf = buf[size:]
+	}
+	if len(buf) == 0 {
+		//all buf is an inconsist rune
+		return result, decodeSpaces(prev), nil
 	}
 	
 	r, size := utf8.DecodeRune(buf)
@@ -193,18 +211,68 @@ func adjustBuffer (opts * Options, buf [] byte) ([]byte, []byte) {
 		str += s
 		buf = buf[size:]
 	}
-	if opts.Trim {
-		if result == nil {
-			str = strings.TrimSpace(str)
-		} else {
-			str = strings.TrimRightFunc(str, unicode.IsSpace)
-		}
-	}
+	
+	var incomplete []byte
 	if (size == 1 && r == utf8.RuneError) {
 		//incomplete rune
-		return []byte(strings.TrimRight(string(buf), "\x00")), append(result, []byte(str)...)
+		incomplete = []byte(strings.TrimRight(string(buf), "\x00"))
+	} else {
+		incomplete = nil
 	}
-	return nil, append(result, []byte(str)...)
+	if (!opts.Trim) {
+		return incomplete, append(result, []byte(str)...), nil
+	}
+	st, content, end := parseString(str)
+	newSpaces := decodeSpaces(append(prev, st...))
+	result = append(result, []byte(content)...)
+	if content != "" {
+		//write all spaces
+		if (atStart) {
+			atStart = false
+			return incomplete, result, end
+		}
+		return incomplete, append(newSpaces, result...), end 
+	}
+	return incomplete, []byte{}, append(prev, st...)
+}
+
+func decodeSpaces (spaces [] Spaces) ([] byte) {
+	buf := make([]byte, 0)
+	for _, sp := range spaces {
+		for sp.amount > 0 {
+			buf = append(buf, byte(sp.char))
+			sp.amount--
+		}
+	}
+	return buf
+}
+
+func parseString(str string) ([] Spaces, string, [] Spaces) {
+	startingSpaces := make([]Spaces, 0)
+	var i int = 0
+	for r, size := utf8.DecodeRune([]byte(str)); i < len(str) && unicode.IsSpace(r); r, size = utf8.DecodeRune([]byte(str)) {
+		if len(startingSpaces) > 0 && startingSpaces[len(startingSpaces) - 1].char == r {
+			startingSpaces[len(startingSpaces) - 1].amount++
+		} else {
+			startingSpaces = append(startingSpaces, Spaces{r, 1})
+		}
+		str = str[size:] 
+	}
+	if i == len(str) {
+		return startingSpaces, "", make([]Spaces, 0)
+	}
+
+	endingSpaces := make([] Spaces, 0)
+	i = len(str) - 1
+	for r, size := utf8.DecodeLastRune([]byte(str)); unicode.IsSpace(r); r, size = utf8.DecodeLastRune([]byte(str)) {
+		if len(endingSpaces) > 0 && endingSpaces[len(endingSpaces) - 1].char == r {
+			endingSpaces[len(endingSpaces) - 1].amount++
+		} else {
+			endingSpaces = append(endingSpaces, Spaces{r, 1})
+		}
+		str = str[:len(str) - size]
+	}
+	return startingSpaces, strings.TrimSpace(str), endingSpaces
 }
 
 func main() {
