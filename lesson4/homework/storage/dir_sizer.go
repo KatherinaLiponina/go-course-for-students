@@ -83,7 +83,6 @@ func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result
 		}
 		res.Size += size
 	}
-
 	if !a.maxSet {
 		for _, dir := range directories {
 			atomic.AddInt64(&childrenAmount, 1)
