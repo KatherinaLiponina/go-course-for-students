@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 )
 
 // Result represents the Size function result
@@ -31,7 +33,52 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
-func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	// TODO: implement this
-	return Result{}, nil
+var childrenAmount int64
+
+func (a *sizer) Size(ctx context.Context, d Dir) (res Result, err error) {
+	collector := make(chan Result)
+	errorChannel := make(chan error)
+	childrenAmount = 1
+	go exploreDir(context.TODO(), d, collector, errorChannel)
+	for childrenAmount != 0 {
+		select {
+		case r:= <-collector:
+			res.Count += r.Count
+			res.Size += r.Size
+		case e := <-errorChannel:
+			return Result{}, errors.Join(errors.New("error occured in one of goroutines"), e)
+		}
+	}
+	close(collector)
+	close(errorChannel)
+	return res, nil
+}
+
+func exploreDir(ctx context.Context, d Dir, resultChannel chan Result, errorChannel chan error) () {
+	var res Result
+	directories, files, err := d.Ls(ctx)
+	defer atomic.AddInt64(&childrenAmount, -1)
+	if err != nil {
+		errorChannel <- err
+		return
+	}
+	if directories != nil {
+		for _, dir := range directories {
+			res.Count ++
+			atomic.AddInt64(&childrenAmount, 1)
+			go exploreDir(context.TODO(), dir, resultChannel, errorChannel)
+		}
+	}
+	if files != nil {
+		for _, f := range files {
+			res.Count++
+			size, err := f.Stat(context.TODO())
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			res.Size += size
+		}
+	}
+	resultChannel <- res
 }
