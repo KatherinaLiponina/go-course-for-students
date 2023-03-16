@@ -24,9 +24,9 @@ type DirSizer interface {
 // sizer implement the DirSizer interface
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
-	maxWorkersCount int
-	maxSet bool
-	cwcMutex sync.Mutex
+	maxWorkersCount     int
+	maxSet              bool
+	cwcMutex            sync.Mutex
 	currentWorkersCount int64
 }
 
@@ -56,17 +56,17 @@ func (a *sizer) Size(ctx context.Context, d Dir) (res Result, err error) {
 			return Result{}, errors.New("context was canceled")
 		}
 	}
-	done:
+done:
 	close(errorChannel)
 	return res, nil
 }
 
-func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result, errorChannel chan error) () {
+func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result, errorChannel chan error) {
 	var res Result
 	directories, files, err := d.Ls(ctx)
 	defer atomic.AddInt64(&childrenAmount, -1)
 	defer func() {
-		if childrenAmount - 1 == 0 {
+		if childrenAmount-1 == 0 {
 			close(resultChannel)
 		}
 	}()
@@ -83,7 +83,7 @@ func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result
 		}
 		res.Size += size
 	}
-	
+
 	if !a.maxSet {
 		for _, dir := range directories {
 			atomic.AddInt64(&childrenAmount, 1)
