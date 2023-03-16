@@ -52,6 +52,8 @@ func (a *sizer) Size(ctx context.Context, d Dir) (res Result, err error) {
 			res.Size += r.Size
 		case e := <-errorChannel:
 			return Result{}, errors.Join(errors.New("error occured in one of goroutines"), e)
+		case <-ctx.Done():
+			return Result{}, errors.New("context was canceled")
 		}
 	}
 	done:
