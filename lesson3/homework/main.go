@@ -116,7 +116,7 @@ func DataDefinition(opts *Options) error {
 		defer readingFile.Close()
 	}
 	if reader == nil {
-		return errors.New("Cannot initialize Reader")
+		return errors.New("cannot initialize Reader")
 	}
 
 	//adjust if offset is set
@@ -135,7 +135,7 @@ func DataDefinition(opts *Options) error {
 	if opts.Limit != 0 {
 		reader = io.LimitReader(reader, int64(opts.Limit))
 		if reader == nil {
-			return errors.New("Cannot initialize LimitReader")
+			return errors.New("cannot initialize LimitReader")
 		}
 	}
 
@@ -153,7 +153,7 @@ func DataDefinition(opts *Options) error {
 		defer writingFile.Close()
 	}
 	if writer == nil {
-		return errors.New("Cannot initialize Writer")
+		return errors.New("cannot initialize Writer")
 	}
 
 	//iterate over all input using blocks by block-size
