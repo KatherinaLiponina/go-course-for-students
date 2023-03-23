@@ -23,7 +23,7 @@ type Options struct {
 }
 
 type Spaces struct {
-	char   rune
+	char rune
 	amount int
 }
 
@@ -159,7 +159,6 @@ func DataDefinition(opts *Options) error {
 	//iterate over all input using blocks by block-size
 	var uncomplete []byte
 	var spaces []Spaces = make([]Spaces, 0)
-
 	for {
 		//read input
 		var block []byte = make([]byte, opts.BlockSize)
@@ -219,6 +218,7 @@ func adjustBuffer(opts *Options, buf []byte, prev []Spaces) ([]byte, []byte, []S
 		//all buf is an inconsist rune
 		return result, decodeSpaces(prev), nil
 	}
+  
 	//decode all correct runes
 	r, size := utf8.DecodeRune(buf)
 	for ; r != utf8.RuneError && buf[0] != '\x00'; r, size = utf8.DecodeRune(buf) {
@@ -251,9 +251,6 @@ func adjustBuffer(opts *Options, buf []byte, prev []Spaces) ([]byte, []byte, []S
 	result = append(result, []byte(content)...)
 	if content != "" {
 		//if symbol was met and it just start - drop it
-		//i'm sorry about global variable i'm just scared of amount of arguments which
-		//just passes by
-		//i'll refactor it... someday
 		if atStart {
 			atStart = false
 			return incomplete, result, end
