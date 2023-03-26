@@ -36,13 +36,16 @@ func NewSizer() DirSizer {
 }
 
 var childrenAmount int64
+var childrenAmountMutex sync.Mutex
 
 func (a *sizer) Size(ctx context.Context, d Dir) (res Result, err error) {
 	collector := make(chan Result)
 	errorChannel := make(chan error)
+	childrenAmountMutex.Lock()
 	childrenAmount = 1
+	childrenAmountMutex.Unlock()
 	go a.exploreDir(ctx, d, collector, errorChannel)
-	for childrenAmount != 0 {
+	for {
 		select {
 		case r, ok := <-collector:
 			if !ok {
@@ -64,11 +67,13 @@ func (a *sizer) Size(ctx context.Context, d Dir) (res Result, err error) {
 func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result, errorChannel chan error) () {
 	var res Result
 	directories, files, err := d.Ls(ctx)
-	defer atomic.AddInt64(&childrenAmount, -1)
 	defer func() {
+		childrenAmountMutex.Lock()
 		if childrenAmount - 1 == 0 {
 			close(resultChannel)
 		}
+		atomic.AddInt64(&childrenAmount, -1)
+		childrenAmountMutex.Unlock()
 	}()
 	if err != nil {
 		errorChannel <- err
@@ -86,7 +91,9 @@ func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result
 	
 	if !a.maxSet {
 		for _, dir := range directories {
+			childrenAmountMutex.Lock()
 			atomic.AddInt64(&childrenAmount, 1)
+			childrenAmountMutex.Unlock()
 			go a.exploreDir(ctx, dir, resultChannel, errorChannel)
 		}
 		resultChannel <- res
@@ -100,13 +107,17 @@ func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result
 			//possible to create goroutine
 			a.currentWorkersCount += 1
 			a.cwcMutex.Unlock()
+			childrenAmountMutex.Lock()
 			atomic.AddInt64(&childrenAmount, 1)
+			childrenAmountMutex.Unlock()
 			go a.exploreDir(ctx, dir, resultChannel, errorChannel)
 		} else {
 			a.cwcMutex.Unlock()
 			//just continue on this goroutine
 			//use add 'cause function is ending althougt goroutine is not
+			childrenAmountMutex.Lock()
 			atomic.AddInt64(&childrenAmount, 1)
+			childrenAmountMutex.Unlock()
 			a.exploreDir(ctx, dir, resultChannel, errorChannel)
 		}
 	}
