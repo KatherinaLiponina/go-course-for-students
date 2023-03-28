@@ -116,7 +116,7 @@ func DataDefinition(opts *Options) error {
 		defer readingFile.Close()
 	}
 	if reader == nil {
-		return errors.New("Cannot initialize Reader")
+		return errors.New("cannot initialize Reader")
 	}
 
 	//adjust if offset is set
@@ -135,7 +135,7 @@ func DataDefinition(opts *Options) error {
 	if opts.Limit != 0 {
 		reader = io.LimitReader(reader, int64(opts.Limit))
 		if reader == nil {
-			return errors.New("Cannot initialize LimitReader")
+			return errors.New("cannot initialize LimitReader")
 		}
 	}
 
@@ -153,19 +153,18 @@ func DataDefinition(opts *Options) error {
 		defer writingFile.Close()
 	}
 	if writer == nil {
-		return errors.New("Cannot initialize Writer")
+		return errors.New("cannot initialize Writer")
 	}
 
 	//iterate over all input using blocks by block-size
-	var uncomplete [] byte
-	var spaces [] Spaces = make([]Spaces, 0)
-	
+	var uncomplete []byte
+	var spaces []Spaces = make([]Spaces, 0)
 	for {
 		//read input
 		var block []byte = make([]byte, opts.BlockSize)
 		readSize, err := io.ReadFull(reader, block)
 		//get rid of \x00 if read less then asked
-		if (readSize != len(block)) {
+		if readSize != len(block) {
 			block = block[:readSize]
 		}
 		//correct block, separate it on "uncomplete" - data, which shouldn't be wrote
@@ -199,18 +198,17 @@ func DataDefinition(opts *Options) error {
 	return nil
 }
 
-func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte, []Spaces) {
+func adjustBuffer(opts *Options, buf []byte, prev []Spaces) ([]byte, []byte, []Spaces) {
 	//if buf is empty - just return
 	if len(buf) == 0 {
 		return nil, []byte{}, nil
 	}
 	var result []byte = make([]byte, 0)
 	var str string = ""
-	
 	//read all data which is not a rune
 	for len(buf) > 0 {
 		r, size := utf8.DecodeRune(buf)
-		if (r != utf8.RuneError) {
+		if r != utf8.RuneError {
 			break
 		}
 		result = append(result, buf[:size]...)
@@ -220,30 +218,30 @@ func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte,
 		//all buf is an inconsist rune
 		return result, decodeSpaces(prev), nil
 	}
-	
+  
 	//decode all correct runes
 	r, size := utf8.DecodeRune(buf)
 	for ; r != utf8.RuneError && buf[0] != '\x00'; r, size = utf8.DecodeRune(buf) {
 		var s string = string(r)
 		//correct it if needed
-		if (opts.Upper) {
+		if opts.Upper {
 			s = strings.ToUpper(s)
-		} else if (opts.Lower) {
+		} else if opts.Lower {
 			s = strings.ToLower(s)
 		}
 		str += s
 		buf = buf[size:]
 	}
-	
+
 	var incomplete []byte
-	if (size == 1 && r == utf8.RuneError) {
+	if size == 1 && r == utf8.RuneError {
 		//incomplete rune
 		incomplete = []byte(strings.TrimRight(string(buf), "\x00"))
 	} else {
 		incomplete = nil
 	}
 	//if not trim return block as all read
-	if (!opts.Trim) {
+	if !opts.Trim {
 		return incomplete, append(result, []byte(str)...), nil
 	}
 	//parse string by spaces (see parseString)
@@ -253,22 +251,19 @@ func adjustBuffer (opts * Options, buf [] byte, prev [] Spaces) ([]byte, []byte,
 	result = append(result, []byte(content)...)
 	if content != "" {
 		//if symbol was met and it just start - drop it
-		//i'm sorry about global variable i'm just scared of amount of arguments which 
-		//just passes by
-		//i'll refactor it... someday
-		if (atStart) {
+		if atStart {
 			atStart = false
 			return incomplete, result, end
 		}
 		//if symbol was met write all spaces before it
-		return incomplete, append(newSpaces, result...), end 
+		return incomplete, append(newSpaces, result...), end
 	}
 	//else just save it for future
 	return incomplete, []byte{}, appendSpaces(prev, st)
 }
 
-//[]Spaces -> []byte
-func decodeSpaces (spaces [] Spaces) ([] byte) {
+// []Spaces -> []byte
+func decodeSpaces(spaces []Spaces) []byte {
 	buf := make([]byte, 0)
 	for _, sp := range spaces {
 		for sp.amount > 0 {
@@ -279,39 +274,39 @@ func decodeSpaces (spaces [] Spaces) ([] byte) {
 	return buf
 }
 
-//like append but smarter
-func appendSpaces(sp1 []Spaces, sp2 [] Spaces) [] Spaces {
-	if len(sp1) > 0 && len(sp2) > 0 && sp1[len(sp1) - 1].char == sp2[0].char {
-		sp1[len(sp1) - 1].amount += sp2[0].amount
+// like append but smarter
+func appendSpaces(sp1 []Spaces, sp2 []Spaces) []Spaces {
+	if len(sp1) > 0 && len(sp2) > 0 && sp1[len(sp1)-1].char == sp2[0].char {
+		sp1[len(sp1)-1].amount += sp2[0].amount
 		sp2 = sp2[1:]
 	}
 	return append(sp1, sp2...)
 }
 
-//string -> spaces at start + real data + spaces at end | just spaces
-func parseString(str string) ([] Spaces, string, [] Spaces) {
+// string -> spaces at start + real data + spaces at end | just spaces
+func parseString(str string) ([]Spaces, string, []Spaces) {
 	startingSpaces := make([]Spaces, 0)
 	var i int = 0
 	for r, size := utf8.DecodeRune([]byte(str)); i < len(str) && unicode.IsSpace(r); r, size = utf8.DecodeRune([]byte(str)) {
-		if len(startingSpaces) > 0 && startingSpaces[len(startingSpaces) - 1].char == r {
-			startingSpaces[len(startingSpaces) - 1].amount++
+		if len(startingSpaces) > 0 && startingSpaces[len(startingSpaces)-1].char == r {
+			startingSpaces[len(startingSpaces)-1].amount++
 		} else {
 			startingSpaces = append(startingSpaces, Spaces{r, 1})
 		}
-		str = str[size:] 
+		str = str[size:]
 	}
 	if i == len(str) {
 		return startingSpaces, "", make([]Spaces, 0)
 	}
 
-	endingSpaces := make([] Spaces, 0)
+	endingSpaces := make([]Spaces, 0)
 	for r, size := utf8.DecodeLastRune([]byte(str)); unicode.IsSpace(r); r, size = utf8.DecodeLastRune([]byte(str)) {
-		if len(endingSpaces) > 0 && endingSpaces[len(endingSpaces) - 1].char == r {
-			endingSpaces[len(endingSpaces) - 1].amount++
+		if len(endingSpaces) > 0 && endingSpaces[len(endingSpaces)-1].char == r {
+			endingSpaces[len(endingSpaces)-1].amount++
 		} else {
 			endingSpaces = append(endingSpaces, Spaces{r, 1})
 		}
-		str = str[:len(str) - size]
+		str = str[:len(str)-size]
 	}
 	return startingSpaces, strings.TrimSpace(str), endingSpaces
 }
