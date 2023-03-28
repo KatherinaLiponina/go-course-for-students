@@ -12,6 +12,24 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
-	// TODO
-	return nil
+	for i := 0; i < len(stages); i++ {
+		in = stages[i](in);
+	}
+	out := make(chan any)
+	go func() {
+		for {
+			select {
+			case r, ok := <-in:
+				if !ok {
+					close(out)
+					return
+				}
+				out <- r
+			case <-ctx.Done():
+				close(out)
+				return
+			}
+		}
+	}()
+	return out
 }
