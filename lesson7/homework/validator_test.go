@@ -217,6 +217,44 @@ func TestValidate(t *testing.T) {
 				return true
 			},
 		},
+		{
+			name: "correct struct with slices",
+			args: args{
+				v: struct {
+					MinStr []string `validate:"min:2"`
+					MaxInt []int    `validate:"max:20"`
+					InInt []int     `validate:"in:12,14,15,20"`
+					LenStr []string `validate:"len:4"`
+				}{
+					MinStr: []string{"era", "uno", "week"},
+					MaxInt: []int{-22, 0, 14, 19},
+					InInt: []int{12, 14},
+					LenStr: []string{"week", "hero", "fear", "more"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "incorrect struct with slices",
+			args: args{
+				v: struct {
+					MinStr []string `validate:"min:2"`
+					MaxInt []int    `validate:"max:20"`
+					InInt  []int    `validate:"in:12,14,15,20"`
+					LenStr []string `validate:"len:4"`
+				}{
+					MinStr: []string{"era", "u", ""},
+					MaxInt: []int{-22, 1000, 14, 21},
+					InInt:  []int{12, 14, 19, -3},
+					LenStr: []string{"week", "hero", "foo", "baz"},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 8)
+				return true
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
