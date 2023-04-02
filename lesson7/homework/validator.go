@@ -77,13 +77,13 @@ func Validate(v any) error {
 		case reflect.Slice:
 			if dt.Field(i).Type.String() == "[]string" {
 				str := dv.Field(i).Interface().([]string)
-				for _, el := range(str) {
-					errorStack = writeDownError(validateString(validator, value, el), errorStack, dt.Field(i).Name + "." + strconv.Itoa(i))
+				for _, el := range str {
+					errorStack = writeDownError(validateString(validator, value, el), errorStack, dt.Field(i).Name+"."+strconv.Itoa(i))
 				}
 			} else if dt.Field(i).Type.String() == "[]int" {
 				str := dv.Field(i).Interface().([]int)
-				for _, el := range(str) {
-					errorStack = writeDownError(validateInteger(validator, value, el), errorStack, dt.Field(i).Name + "." + strconv.Itoa(i))
+				for _, el := range str {
+					errorStack = writeDownError(validateInteger(validator, value, el), errorStack, dt.Field(i).Name+"."+strconv.Itoa(i))
 				}
 			}
 			continue
@@ -103,7 +103,7 @@ func writeDownError(newError error, errorArray []error, name string) []error {
 	if errors.Is(newError, ErrInvalidValidatorSyntax) {
 		errorArray = append(errorArray, newError)
 	} else if errors.Is(newError, ErrValidationError) {
-		errorArray = append(errorArray, errors.New("Field " + name + " isn't valid"))
+		errorArray = append(errorArray, errors.New("Field "+name+" isn't valid"))
 	}
 	return errorArray
 }
