@@ -27,12 +27,20 @@ func (v ValidationErrors) Error() string {
 	return strings.Join(stringArray, ", ")
 }
 
+func makeValidationErrors(err []error) ValidationErrors {
+	var v ValidationErrors
+	for i := 0; i < len(err); i++ {
+		v = append(v, ValidationError{err[i]})
+	}
+	return v
+}
+
 func Validate(v any) error {
 	if reflect.ValueOf(v).Kind() != reflect.Struct {
 		return ErrNotStruct
 	}
 
-	var err ValidationErrors = make(ValidationErrors, 0)
+	var errorStack []error = make([]error, 0)
 	dt := reflect.TypeOf(v)
 	dv := reflect.ValueOf(v)
 
@@ -44,59 +52,60 @@ func Validate(v any) error {
 		}
 		requirement := strings.Split(validation, ":")
 		if len(requirement) < 2 {
-			err = append(err, ValidationError{ErrInvalidValidatorSyntax})
+			errorStack = append(errorStack, ErrInvalidValidatorSyntax)
 			continue
 		}
 
 		validator := requirement[0]
 		value := requirement[1]
 		if value == "" {
-			err = append(err, ValidationError{ErrInvalidValidatorSyntax})
+			errorStack = append(errorStack, ErrInvalidValidatorSyntax)
 			continue
 		}
 		if !dt.Field(i).IsExported() {
-			err = append(err, ValidationError{ErrValidateForUnexportedFields})
+			errorStack = append(errorStack, ErrValidateForUnexportedFields)
 			continue
 		}
 
 		typeLine := dt.Field(i).Type.Kind()
-		var e error = nil
+		var err error = nil
 		switch typeLine {
 		case reflect.Int:
-			e = validateInteger(validator, value, dv.Field(i).Interface().(int))
+			err = validateInteger(validator, value, dv.Field(i).Interface().(int))
 		case reflect.String:
-			e = validateString(validator, value, dv.Field(i).Interface().(string))
+			err = validateString(validator, value, dv.Field(i).Interface().(string))
 		case reflect.Slice:
 			if dt.Field(i).Type.String() == "[]string" {
 				str := dv.Field(i).Interface().([]string)
 				for _, el := range(str) {
-					writeDownError(validateString(validator, value, el), &err, dt.Field(i).Name + "." + strconv.Itoa(i))
+					errorStack = writeDownError(validateString(validator, value, el), errorStack, dt.Field(i).Name + "." + strconv.Itoa(i))
 				}
 			} else if dt.Field(i).Type.String() == "[]int" {
 				str := dv.Field(i).Interface().([]int)
 				for _, el := range(str) {
-					writeDownError(validateInteger(validator, value, el), &err, dt.Field(i).Name + "." + strconv.Itoa(i))
+					errorStack = writeDownError(validateInteger(validator, value, el), errorStack, dt.Field(i).Name + "." + strconv.Itoa(i))
 				}
 			}
 			continue
 		}
-		writeDownError(e, &err, dt.Field(i).Name)
+		errorStack = writeDownError(err, errorStack, dt.Field(i).Name)
 	}
 
-	if len(err) == 0 {
+	if len(errorStack) == 0 {
 		return nil
 	} else {
-		var e error = err
+		var e error = makeValidationErrors(errorStack)
 		return e
 	}
 }
 
-func writeDownError(e error, err * ValidationErrors, name string) {
-	if e == ErrInvalidValidatorSyntax {
-		*err = append(*err, ValidationError{ErrInvalidValidatorSyntax})
-	} else if e == ErrValidationError {
-		*err = append(*err, ValidationError{errors.New("Field " + name + " isn't valid")})
+func writeDownError(newError error, errorArray []error, name string) []error {
+	if errors.Is(newError, ErrInvalidValidatorSyntax) {
+		errorArray = append(errorArray, newError)
+	} else if errors.Is(newError, ErrValidationError) {
+		errorArray = append(errorArray, errors.New("Field " + name + " isn't valid"))
 	}
+	return errorArray
 }
 
 func contains[T comparable](t []T, needle T) bool {
