@@ -7,11 +7,15 @@ import (
 )
 
 type repo struct {
+	index int64
 	adStorage map[int64]ads.Ad
 }
 
-func (r * repo) AppendAd(ad ads.Ad) {
+func (r * repo) AppendAd(Title string, Text string, AuthorID int64) *ads.Ad {
+	ad := ads.CreateAd(r.index, Title, Text, AuthorID)
+	r.index++
 	r.adStorage[ad.ID] = ad
+	return &ad
 }
 
 func (r * repo) ChangeAdStatus(ID int64, status bool) {
@@ -39,10 +43,6 @@ func (r * repo) GetAdByID(ID int64) (*ads.Ad, error) {
 	return &a, nil
 }
 
-type repository struct {
-	*repo
-}
-
 func New() app.Repository {
-	return repository{&repo{map[int64]ads.Ad{}}}
+	return &repo{0, map[int64]ads.Ad{}}
 }
