@@ -5,10 +5,20 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/KatherinaLiponina/validation"
 
 	"homework6/internal/ads"
 	"homework6/internal/app"
 )
+
+type validationStruct struct {
+	Title string `validate:"title"`
+	Text string `validate:"text"`
+}
+
+func newValidationStruct(title string, text string) validationStruct {
+	return validationStruct{Title: title, Text: text}
+}
 
 // Метод для создания объявления (ad)
 func createAd(a app.App) fiber.Handler {

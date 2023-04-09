@@ -30,14 +30,14 @@ type app struct {
 
 type validationStruct struct {
 	Title string `validate:"title"`
-	Text string `validate:"text"`
+	Text  string `validate:"text"`
 }
 
 func newValidationStruct(title string, text string) validationStruct {
 	return validationStruct{Title: title, Text: text}
 }
 
-func (a * app) CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error) {
+func (a *app) CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error) {
 	err := validation.Validate(newValidationStruct(Title, Text))
 	if err != nil {
 		return nil, ErrBadRequest
@@ -45,7 +45,7 @@ func (a * app) CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, err
 	return a.repository.AppendAd(Title, Text, AuthorID), nil
 }
 
-func (a * app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, error) {
+func (a *app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, error) {
 	ad, err := a.repository.GetAdByID(ID)
 	if err != nil {
 		return nil, ErrNotFound
@@ -54,10 +54,10 @@ func (a * app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, e
 		return nil, ErrForbidden
 	}
 	a.repository.ChangeAdStatus(ID, status)
-	return a.repository.GetAdByID(ID);
+	return a.repository.GetAdByID(ID)
 }
 
-func (a * app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*ads.Ad, error) {
+func (a *app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*ads.Ad, error) {
 	err := validation.Validate(newValidationStruct(Title, Text))
 	if err != nil {
 		return nil, ErrBadRequest
@@ -70,7 +70,7 @@ func (a * app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*a
 		return nil, ErrForbidden
 	}
 	a.repository.UpdateAd(ID, Text, Title)
-	return a.repository.GetAdByID(ID);
+	return a.repository.GetAdByID(ID)
 }
 
 func NewApp(repo Repository) App {
