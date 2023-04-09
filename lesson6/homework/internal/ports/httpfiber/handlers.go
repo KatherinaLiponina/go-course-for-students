@@ -4,9 +4,20 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/KatherinaLiponina/validation"
 
+	"homework6/internal/ads"
 	"homework6/internal/app"
 )
+
+type validationStruct struct {
+	Title string `validate:"title"`
+	Text string `validate:"text"`
+}
+
+func newValidationStruct(title string, text string) validationStruct {
+	return validationStruct{Title: title, Text: text}
+}
 
 // Метод для создания объявления (ad)
 func createAd(a app.App) fiber.Handler {
@@ -18,14 +29,19 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		err = validation.Validate(newValidationStruct(reqBody.Title, reqBody.Text))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		}
+		var ad * ads.Ad
+		ad, err = a.CreateAd(reqBody.Title, reqBody.Text, reqBody.UserID)
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -44,15 +60,18 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		var ad * ads.Ad
+		ad, err = a.ChangeAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
 
-		if err != nil {
+		if err == app.ErrForbidden {
+			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		} else if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -71,14 +90,23 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-
+		err = validation.Validate(newValidationStruct(reqBody.Title, reqBody.Text))
 		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		}
+		
+		var ad * ads.Ad
+		ad, err = a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+
+		if err == app.ErrForbidden {
+			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		} else if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
