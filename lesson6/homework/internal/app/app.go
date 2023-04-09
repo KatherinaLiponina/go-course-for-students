@@ -1,12 +1,15 @@
 package app
 
 import (
+	"github.com/KatherinaLiponina/validation"
+
 	"errors"
 	"homework6/internal/ads"
 )
 
-var ErrNotFound = errors.New("Repository does not contain ad with given ID")
-var ErrForbidden = errors.New("AuthorID does not match given ID")
+var ErrNotFound = errors.New("repository does not contain ad with given ID")
+var ErrForbidden = errors.New("authorID does not match given ID")
+var ErrBadRequest = errors.New("validation for title or text was failed")
 
 type App interface {
 	CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error)
@@ -15,22 +18,31 @@ type App interface {
 }
 
 type Repository interface {
-	AppendAd(ad ads.Ad)
+	AppendAd(Title string, Text string, AuthorID int64) *ads.Ad
 	ChangeAdStatus(ID int64, status bool)
 	UpdateAd(ID int64, Text string, Title string)
 	GetAdByID(ID int64) (*ads.Ad, error)
 }
 
 type app struct {
-	index int64
 	repository Repository
 }
 
+type validationStruct struct {
+	Title string `validate:"title"`
+	Text string `validate:"text"`
+}
+
+func newValidationStruct(title string, text string) validationStruct {
+	return validationStruct{Title: title, Text: text}
+}
+
 func (a * app) CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error) {
-	ad := ads.CreateAd(a.index, Title, Text, AuthorID)
-	a.index++
-	a.repository.AppendAd(ad)
-	return &ad, nil
+	err := validation.Validate(newValidationStruct(Title, Text))
+	if err != nil {
+		return nil, ErrBadRequest
+	}
+	return a.repository.AppendAd(Title, Text, AuthorID), nil
 }
 
 func (a * app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, error) {
@@ -46,6 +58,10 @@ func (a * app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, e
 }
 
 func (a * app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*ads.Ad, error) {
+	err := validation.Validate(newValidationStruct(Title, Text))
+	if err != nil {
+		return nil, ErrBadRequest
+	}
 	ad, err := a.repository.GetAdByID(ID)
 	if err != nil {
 		return nil, ErrNotFound
@@ -58,5 +74,5 @@ func (a * app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*a
 }
 
 func NewApp(repo Repository) App {
-	return &app{repository: repo, index: 0}
+	return &app{repository: repo}
 }
