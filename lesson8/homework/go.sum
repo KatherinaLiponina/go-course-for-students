@@ -1,3 +1,5 @@
+github.com/KatherinaLiponina/validation v1.2.3 h1:wje9ImfrVNr1qCWLkAbmAF1bRmGIQDUJ3+DQ1IwOkcw=
+github.com/KatherinaLiponina/validation v1.2.3/go.mod h1:EkscA5ac4GiFaAXpM71w6Io1bVfp61mSc0u6xhAucxg=
 github.com/andybalholm/brotli v1.0.5 h1:8uQZIdzKmjc/iuPu7O2ioW48L81FgatrcpfFmiq/cCs=
 github.com/andybalholm/brotli v1.0.5/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
