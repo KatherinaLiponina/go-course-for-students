@@ -1,10 +1,12 @@
 package httpfiber
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 
+	"homework6/internal/ads"
 	"homework6/internal/app"
 )
 
@@ -18,14 +20,17 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		var ad * ads.Ad
+		ad, err = a.CreateAd(reqBody.Title, reqBody.Text, reqBody.UserID)
 
-		if err != nil {
+		if errors.Is(err, app.ErrBadRequest) {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		} else if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -44,15 +49,18 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		var ad * ads.Ad
+		ad, err = a.ChangeAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
 
-		if err != nil {
+		if errors.Is(err, app.ErrForbidden) {
+			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		} else if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -71,14 +79,20 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		var ad * ads.Ad
+		ad, err = a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 
-		if err != nil {
+		if errors.Is(err, app.ErrForbidden) {
+			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		} else if errors.Is(err, app.ErrBadRequest) {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		} else if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }

@@ -5,6 +5,7 @@ go 1.19
 require github.com/gofiber/fiber/v2 v2.43.0
 
 require (
+	github.com/KatherinaLiponina/validation v1.2.3
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
