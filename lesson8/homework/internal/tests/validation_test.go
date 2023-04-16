@@ -41,44 +41,52 @@ func TestCreateAd_TooLongText(t *testing.T) {
 
 func TestUpdateAd_EmptyTitle(t *testing.T) {
 	client := getTestClient()
-
-	resp, err := client.createAd(123, "hello", "world")
+	_, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(123, resp.Data.ID, "", "new_world")
+	resp, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+
+	_, err = client.updateAd(0, resp.Data.ID, "", "new_world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
 func TestUpdateAd_TooLongTitle(t *testing.T) {
 	client := getTestClient()
+	_, err := client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
 
-	resp, err := client.createAd(123, "hello", "world")
+	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
 	title := strings.Repeat("a", 101)
 
-	_, err = client.updateAd(123, resp.Data.ID, title, "world")
+	_, err = client.updateAd(0, resp.Data.ID, title, "world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
 func TestUpdateAd_EmptyText(t *testing.T) {
 	client := getTestClient()
-
-	resp, err := client.createAd(123, "hello", "world")
+	_, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(123, resp.Data.ID, "title", "")
+	resp, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+
+	_, err = client.updateAd(0, resp.Data.ID, "title", "")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
 func TestUpdateAd_TooLongText(t *testing.T) {
 	client := getTestClient()
+	_, err := client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
 
 	text := strings.Repeat("a", 501)
 
-	resp, err := client.createAd(123, "hello", "world")
+	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(123, resp.Data.ID, "title", text)
+	_, err = client.updateAd(0, resp.Data.ID, "title", text)
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
