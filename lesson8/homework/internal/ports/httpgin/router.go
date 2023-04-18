@@ -3,6 +3,7 @@ package httpgin
 import (
 	"homework8/internal/app"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,8 +11,8 @@ import (
 
 func AppRouter(r *gin.RouterGroup, a app.App) {
 
-	r.Use(gin.Recovery())
-	r.Use(CustomMiddleware)
+	r.Use(gin.CustomRecovery(CustomPanicRecover))
+	r.Use(CustomLogger)
 
 	r.GET("/ads/:id", GetAdByID(a))
 	r.POST("/ads", CreateAd(a))
@@ -25,11 +26,15 @@ func AppRouter(r *gin.RouterGroup, a app.App) {
 
 }
 
-func CustomMiddleware(c * gin.Context) {
+func CustomLogger(c * gin.Context) {
 	t := time.Now().UTC()
 	c.Next()
 	latency := time.Since(t)
 	status := c.Writer.Status()
 
 	log.Println("latency", latency, "method", c.Request.Method, "path", c.Request.URL.Path, "status", status)
+}
+
+func CustomPanicRecover(c *gin.Context, err any) {
+	c.AbortWithStatusJSON(http.StatusInternalServerError, err.(error).Error())
 }
