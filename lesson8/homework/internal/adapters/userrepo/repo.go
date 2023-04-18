@@ -4,33 +4,41 @@ import (
 	"errors"
 	"homework8/internal/app"
 	"homework8/internal/users"
+	"sync"
 )
 
 type repo struct {
+	mtx sync.RWMutex
 	index int64
-	adStorage map[int64]users.User
+	usrStorage map[int64]users.User
 }
 
 func (r * repo) AppendUser(nickname string, email string) *users.User {
+	r.mtx.Lock()
 	usr := users.CreateUser(r.index, nickname, email)
 	r.index++
-	r.adStorage[usr.ID] = usr
+	r.usrStorage[usr.ID] = usr
+	r.mtx.Unlock()
 	return &usr
 }
 
 func (r * repo) UpdateUser(ID int64, nickname string, email string) {
-	usr, _ := r.GetUserByID(ID)
+	r.mtx.Lock()
+	usr := r.usrStorage[ID]
 	if len(nickname) > 0 {
 		usr.UpdateNickname(nickname)
 	}
 	if len(email) > 0 {
 		usr.UpdateEmail(email)
 	}
-	r.adStorage[usr.ID] = *usr
+	r.usrStorage[usr.ID] = usr
+	r.mtx.Unlock()
 }
 
 func (r * repo) GetUserByID(ID int64) (*users.User, error) {
-	a, ok := r.adStorage[ID]
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+	a, ok := r.usrStorage[ID]
 	if !ok {
 		return nil, errors.New("not found")
 	}
@@ -38,5 +46,5 @@ func (r * repo) GetUserByID(ID int64) (*users.User, error) {
 }
 
 func New() app.UserRepository {
-	return &repo{0, map[int64]users.User{}}
+	return &repo{index: 0, usrStorage: map[int64]users.User{}}
 }
