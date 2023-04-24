@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 
 	"homework9/internal/adapters/adrepo"
+	"homework9/internal/adapters/userrepo"
 	"homework9/internal/app"
 	"homework9/internal/ports/httpgin"
 )
@@ -40,7 +41,7 @@ type testClient struct {
 }
 
 func getTestClient() *testClient {
-	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New()))
+	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New()))
 	testServer := httptest.NewServer(server.Handler)
 
 	return &testClient{
