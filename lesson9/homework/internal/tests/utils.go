@@ -2,27 +2,27 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+
+	"strconv"
 	"time"
 
-	"homework9/internal/adapters/adrepo"
-	"homework9/internal/adapters/userrepo"
-	"homework9/internal/app"
-	"homework9/internal/ports/httpgin"
+	"homework9/internal/ports"
 )
 
 type adData struct {
-	ID        int64  `json:"id"`
-	Title     string `json:"title"`
-	Text      string `json:"text"`
-	AuthorID  int64  `json:"author_id"`
-	Published bool   `json:"published"`
+	ID           int64     `json:"id"`
+	Title        string    `json:"title"`
+	Text         string    `json:"text"`
+	AuthorID     int64     `json:"author_id"`
+	Published    bool      `json:"published"`
 	CreationTime time.Time `json:"creation_time"`
-	UpdateTime time.Time `json:"update_time"`
+	UpdateTime   time.Time `json:"update_time"`
 }
 
 type adResponse struct {
@@ -46,26 +46,36 @@ type userResponse struct {
 var (
 	ErrBadRequest = fmt.Errorf("bad request")
 	ErrForbidden  = fmt.Errorf("forbidden")
-	ErrNotFound = fmt.Errorf("not found")
+	ErrNotFound   = fmt.Errorf("not found")
 )
 
 type testClient struct {
-	client  *http.Client
-	baseURL string
+	cancelFunc context.CancelFunc
+	ch         chan int
+	baseURL    string
 }
 
 func getTestClient() *testClient {
-	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New()))
-	testServer := httptest.NewServer(server.Handler())
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	endChan := make(chan int)
+	server, _ := ports.CreateServer(ctx, endChan)
+	testServer := httptest.NewServer(server.Handler)
 
 	return &testClient{
-		client:  testServer.Client(),
-		baseURL: testServer.URL,
+		cancelFunc: cancelFunc,
+		ch:         endChan,
+		baseURL:    testServer.URL,
 	}
 }
 
+func (t *testClient) cancelTestClient() {
+	t.cancelFunc()
+	<-t.ch
+}
+
 func (tc *testClient) getResponse(req *http.Request, out any) error {
-	resp, err := tc.client.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("unexpected error: %w", err)
 	}
@@ -197,7 +207,7 @@ func (tc *testClient) listAds(r io.Reader) (adsResponse, error) {
 func (tc *testClient) createUser(nickname string, email string) (userResponse, error) {
 	body := map[string]any{
 		"nickname": nickname,
-		"email":   email,
+		"email":    email,
 	}
 
 	data, err := json.Marshal(body)
@@ -224,7 +234,7 @@ func (tc *testClient) createUser(nickname string, email string) (userResponse, e
 func (tc *testClient) updateUser(id int64, nickname string, email string) (userResponse, error) {
 	body := map[string]any{
 		"nickname": nickname,
-		"email":   email,
+		"email":    email,
 	}
 
 	data, err := json.Marshal(body)
@@ -232,7 +242,7 @@ func (tc *testClient) updateUser(id int64, nickname string, email string) (userR
 		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", id), bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", id), bytes.NewReader(data))
 	if err != nil {
 		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
@@ -250,11 +260,11 @@ func (tc *testClient) updateUser(id int64, nickname string, email string) (userR
 
 func (tc *testClient) listAdsByAuthor(authorID int64) (adsResponse, error) {
 	body := map[string]any{
-		"by_author": true,
-		"author_id": authorID,
-		"by_creation": false,
+		"by_author":     true,
+		"author_id":     authorID,
+		"by_creation":   false,
 		"creation_time": nil,
-		"all": false,
+		"all":           false,
 	}
 
 	data, err := json.Marshal(body)
@@ -267,11 +277,11 @@ func (tc *testClient) listAdsByAuthor(authorID int64) (adsResponse, error) {
 
 func (tc *testClient) listAdsByTime(time time.Time) (adsResponse, error) {
 	body := map[string]any{
-		"by_author": false,
-		"author_id": -1,
-		"by_creation": true,
+		"by_author":     false,
+		"author_id":     -1,
+		"by_creation":   true,
 		"creation_time": time,
-		"all": false,
+		"all":           false,
 	}
 
 	data, err := json.Marshal(body)
@@ -284,11 +294,11 @@ func (tc *testClient) listAdsByTime(time time.Time) (adsResponse, error) {
 
 func (tc *testClient) listAll() (adsResponse, error) {
 	body := map[string]any{
-		"by_author": false,
-		"author_id": -1,
-		"by_creation": false,
+		"by_author":     false,
+		"author_id":     -1,
+		"by_creation":   false,
 		"creation_time": nil,
-		"all": true,
+		"all":           true,
 	}
 
 	data, err := json.Marshal(body)
@@ -329,6 +339,61 @@ func (tc *testClient) findAdByTitle(title string) (adsResponse, error) {
 	err = tc.getResponse(req, &response)
 	if err != nil {
 		return adsResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) GetUserByID(ID int64) (userResponse, error) {
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", ID), nil)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) DeleteUser(ID int64) (userResponse, error) {
+
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", ID), nil)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) DeleteAd(ID int64, authorID int64) (adResponse, error) {
+
+	author := strconv.FormatInt(authorID, 10)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d?author=%s", ID, author), nil)
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response adResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adResponse{}, err
 	}
 
 	return response, nil

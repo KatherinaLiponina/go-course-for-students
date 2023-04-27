@@ -6,8 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateUser(t * testing.T) {
+func TestCreateUser(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 
 	response, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
@@ -19,8 +20,53 @@ func TestCreateUser(t * testing.T) {
 	assert.Equal(t, response.Data.ID, int64(1))
 }
 
-func TestUpdateUser(t * testing.T) {
+func TestGetUser(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
+
+	resp, err := client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
+	response, err := client.GetUserByID(resp.Data.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, response.Data.ID, resp.Data.ID)
+	assert.Equal(t, response.Data.Nickname, resp.Data.Nickname)
+	assert.Equal(t, response.Data.Email, resp.Data.Email)
+}
+
+func TestDeleteUser(t *testing.T) {
+	client := getTestClient()
+	defer client.cancelTestClient()
+
+	resp, err := client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
+	response, err := client.DeleteUser(resp.Data.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, response.Data.ID, resp.Data.ID)
+	assert.Equal(t, response.Data.Nickname, resp.Data.Nickname)
+	assert.Equal(t, response.Data.Email, resp.Data.Email)
+	response, err = client.DeleteUser(resp.Data.ID)
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestDeleteAd(t *testing.T) {
+	client := getTestClient()
+	defer client.cancelTestClient()
+
+	_, err := client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
+	resp2, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+	resp3, err := client.DeleteAd(resp2.Data.ID, resp2.Data.AuthorID)
+	assert.NoError(t, err)
+	assert.Equal(t, resp2.Data.ID, resp3.Data.ID)
+	assert.Equal(t, resp2.Data.AuthorID, resp3.Data.AuthorID)
+	_, err = client.DeleteAd(resp2.Data.ID, resp2.Data.AuthorID)
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestUpdateUser(t *testing.T) {
+	client := getTestClient()
+	defer client.cancelTestClient()
 	response, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
 	response, err = client.updateUser(response.Data.ID, "", "new.mail@yandex.ru")
@@ -32,6 +78,7 @@ func TestUpdateUser(t * testing.T) {
 
 func TestCreateAd(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
@@ -49,6 +96,7 @@ func TestCreateAd(t *testing.T) {
 
 func TestChangeAdStatus(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
@@ -71,6 +119,7 @@ func TestChangeAdStatus(t *testing.T) {
 
 func TestUpdateAd(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
@@ -88,6 +137,7 @@ func TestUpdateAd(t *testing.T) {
 
 func TestListAds(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -112,8 +162,9 @@ func TestListAds(t *testing.T) {
 	assert.True(t, ads.Data[0].Published)
 }
 
-func TestListAdsByAuthor(t * testing.T) {
+func TestListAdsByAuthor(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -132,8 +183,9 @@ func TestListAdsByAuthor(t * testing.T) {
 	assert.Equal(t, ads.Data[1].AuthorID, ad.Data.AuthorID)
 }
 
-func TestListAdsByTime(t * testing.T) {
+func TestListAdsByTime(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -153,8 +205,9 @@ func TestListAdsByTime(t * testing.T) {
 	assert.Equal(t, ads.Data[0].AuthorID, ad2.Data.AuthorID)
 }
 
-func TestListAll(t * testing.T) {
+func TestListAll(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -172,6 +225,7 @@ func TestListAll(t * testing.T) {
 
 func TestGetAdById(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
 
@@ -184,6 +238,7 @@ func TestGetAdById(t *testing.T) {
 
 func TestFindByName(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("Jane", "jane.doe@gmail.com")
 	assert.NoError(t, err)
 

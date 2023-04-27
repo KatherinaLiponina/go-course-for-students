@@ -45,6 +45,17 @@ func (r * repo) GetUserByID(ID int64) (*users.User, error) {
 	return &a, nil
 }
 
+func (r * repo) DeleteUser(ID int64) (*users.User, error) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	usr, ok := r.usrStorage[ID]
+	if !ok {
+		return nil, errors.New("not found")
+	}
+	delete(r.usrStorage, usr.ID)
+	return &usr, nil;
+}
+
 func New() app.UserRepository {
 	return &repo{index: 0, usrStorage: map[int64]users.User{}}
 }
