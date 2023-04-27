@@ -68,6 +68,7 @@ func (a *sizer) exploreDir(ctx context.Context, d Dir, resultChannel chan Result
 	var res Result
 	directories, files, err := d.Ls(ctx)
 	defer func() {
+		childrenAmountMutex.Lock()
 		if childrenAmount-1 == 0 {
 			close(resultChannel)
 		}

@@ -3,59 +3,15 @@ package tests
 import (
 	"context"
 	"log"
-	"net"
 	"testing"
-	"time"
 
-	"homework9/internal/adapters/adrepo"
-	"homework9/internal/adapters/userrepo"
-	"homework9/internal/app"
 	"homework9/internal/ports"
 	grpcPort "homework9/internal/ports/grpc"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
 )
-
-func TestGRRPCCreateUser(t *testing.T) {
-	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() {
-		lis.Close()
-	})
-
-	srv := grpcPort.NewGRPCServer(":50054", app.NewApp(adrepo.New(), userrepo.New()))
-	t.Cleanup(func() {
-		srv.Stop()
-	})
-
-	go func() {
-		assert.NoError(t, srv.Serve(lis), "srv.Serve")
-	}()
-
-	dialer := func(context.Context, string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(func() {
-		cancel()
-	})
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	assert.NoError(t, err, "grpc.DialContext")
-
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
-	client := grpcPort.NewAdServiceClient(conn)
-	res, err := client.CreateUser(ctx, &grpcPort.CreateUserRequest{Name: "Oleg"})
-	assert.NoError(t, err, "client.GetUser")
-
-	assert.Equal(t, "Oleg", res.Name)
-}
 
 func TestGRPCCreateUser(t *testing.T) {
 
