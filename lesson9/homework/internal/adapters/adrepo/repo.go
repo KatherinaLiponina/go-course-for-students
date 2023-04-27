@@ -65,6 +65,17 @@ func (r *repo) Select(f func(ads.Ad) bool) []ads.Ad {
 	return resultArray
 }
 
+func (r * repo) DeleteAd(ID int64) (*ads.Ad, error) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	a, ok := r.adStorage[ID]
+	if !ok {
+		return nil, errors.New("not found")
+	}
+	delete(r.adStorage, a.ID)
+	return &a, nil
+}
+
 func New() app.AdRepository {
 	return &repo{index: 0, adStorage: map[int64]ads.Ad{}}
 }

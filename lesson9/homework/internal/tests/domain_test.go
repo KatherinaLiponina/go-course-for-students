@@ -8,6 +8,7 @@ import (
 
 func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -22,6 +23,7 @@ func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 
 func TestUpdateAdOfAnotherUser(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -36,6 +38,7 @@ func TestUpdateAdOfAnotherUser(t *testing.T) {
 
 func TestCreateAd_ID(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createUser("John", "john.doe@gmail.com")
 	assert.NoError(t, err)
 	_, err = client.createUser("Jane", "jane.doe@gmail.com")
@@ -54,8 +57,24 @@ func TestCreateAd_ID(t *testing.T) {
 	assert.Equal(t, resp.Data.ID, int64(2))
 }
 
-func TestCreateAdWithoutUser(t * testing.T) {
+func TestCreateAdWithoutUser(t *testing.T) {
 	client := getTestClient()
+	defer client.cancelTestClient()
 	_, err := client.createAd(1, "hello", "world")
 	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestDeleteAdWithWrongUser(t *testing.T) {
+	client := getTestClient()
+	defer client.cancelTestClient()
+	_, err := client.createUser("John", "john.doe@gmail.com")
+	assert.NoError(t, err)
+	_, err = client.createUser("Jane", "jane.doe@gmail.com")
+	assert.NoError(t, err)
+
+	resp, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+
+	_, err = client.DeleteAd(resp.Data.ID, 1)
+	assert.ErrorIs(t, err, ErrForbidden)
 }
