@@ -44,7 +44,7 @@ func NewGRPCServer(port string, a app.App) *grpc.Server {
 	service := &grpc_func.AdUserService{App: a}
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(UnaryServerInterceptor),
 		grpc.ChainUnaryInterceptor(grpc_recovery.UnaryServerInterceptor(opts...)))
-		grpc_func.RegisterAdServiceServer(server, service)
+	grpc_func.RegisterAdServiceServer(server, service)
 	return server
 }
 
@@ -67,7 +67,7 @@ func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server)
 	}
 
 	a := app.NewApp(adrepo.New(), userrepo.New())
-	httpServer :=  NewHTTPServer(httpPort, a)
+	httpServer := NewHTTPServer(httpPort, a)
 	grpcServer := NewGRPCServer(grpcPort, a)
 
 	eg, ctx := errgroup.WithContext(ctx)
@@ -86,27 +86,27 @@ func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server)
 				return nil
 			}
 		})
-	
+
 		// run grpc server
 		eg.Go(func() error {
 			log.Printf("starting grpc server, listening on %s\n", grpcPort)
 			defer log.Printf("close grpc server listening on %s\n", grpcPort)
-	
+
 			errCh := make(chan error)
-	
+
 			defer func() {
 				grpcServer.GracefulStop()
 				_ = lis.Close()
-	
+
 				close(errCh)
 			}()
-	
+
 			go func() {
 				if err := grpcServer.Serve(lis); err != nil {
 					errCh <- err
 				}
 			}()
-	
+
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -114,30 +114,30 @@ func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server)
 				return fmt.Errorf("grpc server can't listen and serve requests: %w", err)
 			}
 		})
-	
+
 		eg.Go(func() error {
 			log.Printf("starting http server, listening on %s\n", httpServer.Addr)
 			defer log.Printf("close http server listening on %s\n", httpServer.Addr)
-	
+
 			errCh := make(chan error)
-	
+
 			defer func() {
 				shCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
-	
+
 				if err := httpServer.Shutdown(shCtx); err != nil {
 					log.Printf("can't close http server listening on %s: %s", httpServer.Addr, err.Error())
 				}
-	
+
 				close(errCh)
 			}()
-	
+
 			go func() {
 				if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 					errCh <- err
 				}
 			}()
-	
+
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -145,15 +145,15 @@ func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server)
 				return fmt.Errorf("http server can't listen and serve requests: %w", err)
 			}
 		})
-	
+
 		if err := eg.Wait(); err != nil {
 			log.Printf("gracefully shutting down the servers: %s\n", err.Error())
 		}
-	
+
 		log.Println("servers were successfully shutdown")
 
 		ch <- 0
 	}()
-	
+	time.Sleep(time.Millisecond * 30)
 	return httpServer, grpcServer
 }
