@@ -211,3 +211,72 @@ func FindAdByTitle(a app.App) gin.HandlerFunc {
 
 	return gin.HandlerFunc(fn)
 }
+
+func GetUserByID(a app.App) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		usr, err := a.GetUserByID(int64(id))
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.JSON(http.StatusOK, userResponse{*usr})
+	}
+
+	return gin.HandlerFunc(fn)
+}
+
+func DeleteUserByID(a app.App) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		usr, err := a.DeleteUser(int64(id))
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.JSON(http.StatusOK, userResponse{*usr})
+	}
+
+	return gin.HandlerFunc(fn)
+}
+
+func DeleteAdByID(a app.App) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		author := c.Query("author")
+		if author == "" {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		authorID, err := strconv.Atoi(author)
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		ad, err := a.DeleteAd(int64(id), int64(authorID))
+		if err != nil {
+			if err == app.ErrForbidden {
+				c.Status(http.StatusForbidden)
+			} else if err == app.ErrBadRequest {
+				c.Status(http.StatusBadRequest)
+			} else {
+				c.Status(http.StatusNotFound)
+			}
+			return
+		}
+		c.JSON(http.StatusOK, adResponse{*ad})
+	}
+	return gin.HandlerFunc(fn)
+}

@@ -21,9 +21,12 @@ func AppRouter(r *gin.RouterGroup, a app.App) {
 	r.PUT("/ads/:id", UpdateAd(a))
 	r.GET("/ads", Select(a))
 	r.GET("/ads/title", FindAdByTitle(a))
+	r.DELETE("/ads/:id", DeleteAdByID(a))
 
 	r.POST("/users", CreateUser(a))
-	r.POST("/users/:id", UpdateUser(a))
+	r.PUT("/users/:id", UpdateUser(a))
+	r.GET("/users/:id", GetUserByID(a))
+	r.DELETE("/users/:id", DeleteUserByID(a))
 
 }
 
