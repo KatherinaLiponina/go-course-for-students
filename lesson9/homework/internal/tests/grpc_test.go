@@ -16,14 +16,15 @@ import (
 func TestGRPCCreateUser(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -43,14 +44,15 @@ func TestGRPCCreateUser(t *testing.T) {
 func TestGRPCGetUser(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -74,14 +76,15 @@ func TestGRPCGetUser(t *testing.T) {
 func TestGRPCDeleteUser(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -107,14 +110,15 @@ func TestGRPCDeleteUser(t *testing.T) {
 func TestGRPCCreateAd(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -136,14 +140,15 @@ func TestGRPCCreateAd(t *testing.T) {
 func TestGRPCDeleteAd(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -168,14 +173,15 @@ func TestGRPCDeleteAd(t *testing.T) {
 func TestGRPCChangeAdStatus(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -201,14 +207,15 @@ func TestGRPCChangeAdStatus(t *testing.T) {
 func TestGRPCUpdateAd(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
@@ -236,14 +243,15 @@ func TestGRPCUpdateAd(t *testing.T) {
 func TestGRPCListad(t *testing.T) {
 
 	var cancelFunc context.CancelFunc
+	var endChan chan int
 	go func() {
 		ctx, cf := context.WithCancel(context.Background())
 		cancelFunc = cf
-		endChan := make(chan int)
+		endChan = make(chan int)
 		ports.CreateServer(ctx, endChan)
-		defer func() {
-			<-endChan
-		}()
+	}()
+	defer func() {
+		<-endChan
 	}()
 
 	conn, err := grpc.DialContext(context.Background(),
