@@ -36,20 +36,24 @@ func TestServerUsingTable(t *testing.T) {
 
 	ad1, err := httpclient.createAd(anakin.Data.ID, "Letter to Luke", "I am your father!")
 	assert.NoError(t, err)
-	httpclient.changeAdStatus(ad1.Data.AuthorID, ad1.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ad1.Data.AuthorID, ad1.Data.ID, true)
+	assert.NoError(t, err)
 	ad2, err := httpclient.createAd(anakin.Data.ID, "Letter to Lea", "I find your lack of faith disturbing")
 	assert.NoError(t, err)
-	httpclient.changeAdStatus(ad2.Data.AuthorID, ad2.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ad2.Data.AuthorID, ad2.Data.ID, true)
+	assert.NoError(t, err)
 	ad3, err := httpclient.createAd(lea.Data.ID, "No", "I'd just as soon kiss a Wookiee")
 	assert.NoError(t, err)
-	httpclient.changeAdStatus(ad3.Data.AuthorID, ad3.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ad3.Data.AuthorID, ad3.Data.ID, true)
+	assert.NoError(t, err)
 	ad4, err := httpclient.createAd(luke.Data.ID, "Hello from Yoda", "Do, or do not. There is no try.")
 	assert.NoError(t, err)
 	ad5, err := httpclient.createAd(lea.Data.ID, "May the Force be with you", "Star wars day")
 	assert.NoError(t, err)
 	ad6, err := httpclient.createAd(luke.Data.ID, "May the Force be with you", "Star wars day")
 	assert.NoError(t, err)
-	httpclient.changeAdStatus(ad6.Data.AuthorID, ad6.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ad6.Data.AuthorID, ad6.Data.ID, true)
+	assert.NoError(t, err)
 
 	ads, err := httpclient.listAds(nil)
 	assert.NoError(t, err)
@@ -67,8 +71,10 @@ func TestServerUsingTable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, adsg.List, 6)
 
-	httpclient.changeAdStatus(ad4.Data.AuthorID, ad4.Data.ID, true)
-	httpclient.changeAdStatus(ad5.Data.AuthorID, ad5.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ad4.Data.AuthorID, ad4.Data.ID, true)
+	assert.NoError(t, err)
+	_, err = httpclient.changeAdStatus(ad5.Data.AuthorID, ad5.Data.ID, true)
+	assert.NoError(t, err)
 
 	var byAuthorSearchTest = []struct {
 		author int64

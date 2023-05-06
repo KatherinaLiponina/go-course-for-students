@@ -42,7 +42,7 @@ func BenchmarkGRPC(b *testing.B) {
 	client := grpcPort.NewAdServiceClient(conn)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.CreateUser(context.Background(), &grpcPort.CreateUserRequest{Name: "Oleg"})
+		_, err := client.CreateUser(context.Background(), &grpcPort.CreateUserRequest{Name: "Oleg"})
 		if err != nil {
 			panic("create user failed")
 		}

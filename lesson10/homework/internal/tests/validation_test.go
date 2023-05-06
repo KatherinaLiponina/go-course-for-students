@@ -26,7 +26,10 @@ func (suite *ValidatonTestSuite) SetupTest() {
 	suite.ch = endChan
 	suite.hsrv, _ = ports.CreateServer(ctx, endChan)
 	client := getTestClient(suite.hsrv.Addr)
-	client.createUser("Admin", "admin@powerful.com")
+	_, err := client.createUser("Admin", "admin@powerful.com")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (suite *ValidatonTestSuite) TearDownTest() {
