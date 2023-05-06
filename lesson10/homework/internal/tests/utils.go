@@ -2,17 +2,13 @@ package tests
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 
 	"strconv"
 	"time"
-
-	"homework10/internal/ports"
 )
 
 type adData struct {
@@ -50,27 +46,13 @@ var (
 )
 
 type testClient struct {
-	cancelFunc context.CancelFunc
-	ch         chan int
-	baseURL    string
+	baseURL string
 }
 
-func getTestClient() *testClient {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	endChan := make(chan int)
-	server, _ := ports.CreateServer(ctx, endChan)
-	testServer := httptest.NewServer(server.Handler)
-
+func getTestClient(adr string) *testClient {
 	return &testClient{
-		cancelFunc: cancelFunc,
-		ch:         endChan,
-		baseURL:    testServer.URL,
+		baseURL: "http://localhost" + adr,
 	}
-}
-
-func (t *testClient) cancelTestClient() {
-	t.cancelFunc()
-	<-t.ch
 }
 
 func (tc *testClient) getResponse(req *http.Request, out any) error {

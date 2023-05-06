@@ -1,0 +1,2939 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adrepo: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">homework10/internal/adapters/adrepo/repo.go (97.5%)</option>
+				
+				<option value="file1">homework10/internal/adapters/userrepo/repo.go (96.4%)</option>
+				
+				<option value="file2">homework10/internal/ads/ads.go (100.0%)</option>
+				
+				<option value="file3">homework10/internal/app/app.go (89.4%)</option>
+				
+				<option value="file4">homework10/internal/ports/grpc/handlers.go (83.3%)</option>
+				
+				<option value="file5">homework10/internal/ports/grpc/service.pb.go (30.3%)</option>
+				
+				<option value="file6">homework10/internal/ports/grpc/service_grpc.pb.go (74.6%)</option>
+				
+				<option value="file7">homework10/internal/ports/httpgin/handlers.go (70.9%)</option>
+				
+				<option value="file8">homework10/internal/ports/httpgin/router.go (78.3%)</option>
+				
+				<option value="file9">homework10/internal/ports/server.go (86.8%)</option>
+				
+				<option value="file10">homework10/internal/tests/mocks/mock_adrepo.go (100.0%)</option>
+				
+				<option value="file11">homework10/internal/tests/mocks/mock_app.go (93.8%)</option>
+				
+				<option value="file12">homework10/internal/tests/mocks/mock_userrepo.go (100.0%)</option>
+				
+				<option value="file13">homework10/internal/tests/utils.go (81.2%)</option>
+				
+				<option value="file14">homework10/internal/users/users.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adrepo
+
+import (
+        "errors"
+        "homework10/internal/ads"
+        "homework10/internal/app"
+        "sync"
+)
+
+type repo struct {
+        mtx       sync.RWMutex
+        index     int64
+        adStorage map[int64]ads.Ad
+}
+
+func (r *repo) AppendAd(Title string, Text string, AuthorID int64) *ads.Ad <span class="cov7" title="43">{
+        r.mtx.Lock()
+        ad := ads.CreateAd(r.index, Title, Text, AuthorID)
+        r.index++
+        r.adStorage[ad.ID] = ad
+        r.mtx.Unlock()
+        return &amp;ad
+}</span>
+
+func (r *repo) ChangeAdStatus(ID int64, status bool) <span class="cov5" title="13">{
+        r.mtx.Lock()
+        ad := r.adStorage[ID]
+        ad.ChangeAdStatus(status)
+        r.adStorage[ad.ID] = ad
+        r.mtx.Unlock()
+}</span>
+
+func (r *repo) UpdateAd(ID int64, Text string, Title string) <span class="cov2" title="2">{
+        r.mtx.Lock()
+        ad := r.adStorage[ID]
+        if len(Text) &gt; 0 </span><span class="cov2" title="2">{
+                ad.UpdateText(Text)
+        }</span>
+        <span class="cov2" title="2">if len(Title) &gt; 0 </span><span class="cov2" title="2">{
+                ad.UpdateTitle(Title)
+        }</span>
+        <span class="cov2" title="2">r.adStorage[ad.ID] = ad
+        r.mtx.Unlock()</span>
+}
+
+func (r *repo) GetAdByID(ID int64) (*ads.Ad, error) <span class="cov7" title="37">{
+        r.mtx.RLock()
+        defer r.mtx.RUnlock()
+        a, ok := r.adStorage[ID]
+        if !ok </span><span class="cov1" title="1">{
+                return nil, errors.New("not found")
+        }</span>
+        <span class="cov7" title="36">return &amp;a, nil</span>
+}
+
+func (r *repo) Select(f func(ads.Ad) bool) []ads.Ad <span class="cov7" title="29">{
+        r.mtx.RLock()
+        resultArray := make([]ads.Ad, 0)
+        for _, v := range r.adStorage </span><span class="cov10" title="150">{
+                if f(v) </span><span class="cov8" title="67">{
+                        resultArray = append(resultArray, v)
+                }</span>
+        }
+        <span class="cov7" title="29">r.mtx.RUnlock()
+        return resultArray</span>
+}
+
+func (r *repo) DeleteAd(ID int64) (*ads.Ad, error) <span class="cov2" title="2">{
+        r.mtx.Lock()
+        defer r.mtx.Unlock()
+        a, ok := r.adStorage[ID]
+        if !ok </span><span class="cov0" title="0">{
+                return nil, errors.New("not found")
+        }</span>
+        <span class="cov2" title="2">delete(r.adStorage, a.ID)
+        return &amp;a, nil</span>
+}
+
+func New() app.AdRepository <span class="cov7" title="37">{
+        return &amp;repo{index: 0, adStorage: map[int64]ads.Ad{}}
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package userrepo
+
+import (
+        "errors"
+        "homework10/internal/app"
+        "homework10/internal/users"
+        "sync"
+)
+
+type repo struct {
+        mtx sync.RWMutex
+        index int64
+        usrStorage map[int64]users.User
+}
+
+func (r * repo) AppendUser(nickname string, email string) *users.User <span class="cov9" title="48">{
+        r.mtx.Lock()
+        usr := users.CreateUser(r.index, nickname, email)
+        r.index++
+        r.usrStorage[usr.ID] = usr
+        r.mtx.Unlock()
+        return &amp;usr
+}</span>
+
+func (r * repo) UpdateUser(ID int64, nickname string, email string) <span class="cov2" title="2">{
+        r.mtx.Lock()
+        usr := r.usrStorage[ID]
+        if len(nickname) &gt; 0 </span><span class="cov1" title="1">{
+                usr.UpdateNickname(nickname)
+        }</span>
+        <span class="cov2" title="2">if len(email) &gt; 0 </span><span class="cov2" title="2">{
+                usr.UpdateEmail(email)
+        }</span>
+        <span class="cov2" title="2">r.usrStorage[usr.ID] = usr
+        r.mtx.Unlock()</span>
+}
+
+func (r * repo) GetUserByID(ID int64) (*users.User, error) <span class="cov10" title="69">{
+        r.mtx.RLock()
+        defer r.mtx.RUnlock()
+        a, ok := r.usrStorage[ID]
+        if !ok </span><span class="cov3" title="3">{
+                return nil, errors.New("not found")
+        }</span>
+        <span class="cov9" title="66">return &amp;a, nil</span>
+}
+
+func (r * repo) DeleteUser(ID int64) (*users.User, error) <span class="cov2" title="2">{
+        r.mtx.Lock()
+        defer r.mtx.Unlock()
+        usr, ok := r.usrStorage[ID]
+        if !ok </span><span class="cov0" title="0">{
+                return nil, errors.New("not found")
+        }</span>
+        <span class="cov2" title="2">delete(r.usrStorage, usr.ID)
+        return &amp;usr, nil</span>;
+}
+
+func New() app.UserRepository <span class="cov8" title="37">{
+        return &amp;repo{index: 0, usrStorage: map[int64]users.User{}}
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package ads
+
+import "time"
+
+type Ad struct {
+        ID           int64     `json:"id"`
+        Title        string    `json:"title"`
+        Text         string    `json:"text"`
+        AuthorID     int64     `json:"author_id"`
+        Published    bool      `json:"published"`
+        CreationDate time.Time `json:"creation_time"`
+        UpdateTime   time.Time `json:"update_time"`
+}
+
+func CreateAd(ID int64, Title string, Text string, AuthorID int64) Ad <span class="cov10" title="43">{
+        current_time := time.Now().UTC()
+        return Ad{ID, Title, Text, AuthorID, false, current_time, current_time}
+}</span>
+
+func (a *Ad) ChangeAdStatus(status bool) <span class="cov7" title="13">{
+        a.Published = status
+}</span>
+
+func (a *Ad) UpdateTitle(title string) <span class="cov2" title="2">{
+        a.Title = title
+        a.UpdateTime = time.Now().UTC()
+}</span>
+
+func (a *Ad) UpdateText(text string) <span class="cov2" title="2">{
+        a.Text = text
+        a.UpdateTime = time.Now().UTC()
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package app
+
+import (
+        "errors"
+        "homework10/internal/ads"
+        "homework10/internal/users"
+        "strings"
+        "time"
+
+        "github.com/KatherinaLiponina/validation"
+)
+
+var ErrNotFound = errors.New("repository does not contain ad with given ID")
+var ErrForbidden = errors.New("authorID does not match given ID")
+var ErrBadRequest = errors.New("validation for title or text was failed")
+
+type App interface {
+        CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error)
+        ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, error)
+        UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*ads.Ad, error)
+        GetAdByID(ID int64) (*ads.Ad, error)
+        DeleteAd(ID int64, AuthorID int64) (*ads.Ad, error)
+
+        Select() []ads.Ad
+        SelectByAuthor(authorID int64) ([]ads.Ad, error)
+        SelectByCreation(time time.Time) []ads.Ad
+        SelectAll() []ads.Ad
+        FindByTitle(Title string) []ads.Ad
+
+        CreateUser(nickname string, email string) *users.User
+        UpdateUser(ID int64, nickname string, email string) (*users.User, error)
+        GetUserByID(ID int64) (*users.User, error)
+        DeleteUser(ID int64) (*users.User, error)
+}
+
+type AdRepository interface {
+        AppendAd(Title string, Text string, AuthorID int64) *ads.Ad
+        ChangeAdStatus(ID int64, status bool)
+        UpdateAd(ID int64, Text string, Title string)
+        GetAdByID(ID int64) (*ads.Ad, error)
+        Select(f func(ads.Ad) bool) []ads.Ad
+        DeleteAd(ID int64) (*ads.Ad, error)
+}
+
+type UserRepository interface {
+        AppendUser(nickname string, email string) *users.User
+        UpdateUser(ID int64, nickname string, email string)
+        GetUserByID(ID int64) (*users.User, error)
+        DeleteUser(ID int64) (*users.User, error)
+}
+
+type app struct {
+        adrepo  AdRepository
+        usrrepo UserRepository
+}
+
+type validationStruct struct {
+        Title string `validate:"title"`
+        Text  string `validate:"text"`
+}
+
+func newValidationStruct(title string, text string) validationStruct <span class="cov10" title="59">{
+        return validationStruct{Title: title, Text: text}
+}</span>
+
+func (a *app) CreateAd(Title string, Text string, AuthorID int64) (*ads.Ad, error) <span class="cov9" title="51">{
+        err := validation.Validate(newValidationStruct(Title, Text))
+        if err != nil </span><span class="cov4" title="6">{
+                return nil, ErrBadRequest
+        }</span>
+        <span class="cov9" title="45">_, err = a.usrrepo.GetUserByID(AuthorID)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov9" title="44">return a.adrepo.AppendAd(Title, Text, AuthorID), nil</span>
+}
+
+func (a *app) ChangeAdStatus(ID int64, AuthorID int64, status bool) (*ads.Ad, error) <span class="cov6" title="15">{
+        ad, err := a.adrepo.GetAdByID(ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov6" title="15">if ad.AuthorID != AuthorID </span><span class="cov1" title="1">{
+                return nil, ErrForbidden
+        }</span>
+        <span class="cov6" title="14">a.adrepo.ChangeAdStatus(ID, status)
+        return a.adrepo.GetAdByID(ID)</span>
+}
+
+func (a *app) UpdateAd(ID int64, AuthorID int64, Title string, Text string) (*ads.Ad, error) <span class="cov5" title="8">{
+        err := validation.Validate(newValidationStruct(Title, Text))
+        if err != nil </span><span class="cov4" title="4">{
+                return nil, ErrBadRequest
+        }</span>
+        <span class="cov4" title="4">_, err = a.usrrepo.GetUserByID(AuthorID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov4" title="4">ad, err := a.adrepo.GetAdByID(ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov4" title="4">if ad.AuthorID != AuthorID </span><span class="cov1" title="1">{
+                return nil, ErrForbidden
+        }</span>
+        <span class="cov3" title="3">a.adrepo.UpdateAd(ID, Text, Title)
+        return a.adrepo.GetAdByID(ID)</span>
+}
+
+func (a *app) GetAdByID(ID int64) (*ads.Ad, error) <span class="cov2" title="2">{
+        return a.adrepo.GetAdByID(ID)
+}</span>
+
+func (a *app) Select() []ads.Ad <span class="cov4" title="5">{
+        return a.adrepo.Select(func(a ads.Ad) bool </span><span class="cov7" title="17">{ return a.Published }</span>)
+}
+
+func (a *app) SelectByAuthor(authorID int64) ([]ads.Ad, error) <span class="cov5" title="8">{
+        _, err := a.usrrepo.GetUserByID(authorID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov5" title="8">return a.adrepo.Select(func(a ads.Ad) bool </span><span class="cov9" title="42">{ return a.AuthorID == authorID }</span>), nil
+}
+func (a *app) SelectByCreation(time time.Time) []ads.Ad <span class="cov5" title="7">{
+        return a.adrepo.Select(func(a ads.Ad) bool </span><span class="cov9" title="38">{ return a.CreationDate.After(time) }</span>)
+}
+
+func (a *app) SelectAll() []ads.Ad <span class="cov3" title="3">{
+        return a.adrepo.Select(func(a ads.Ad) bool </span><span class="cov6" title="14">{ return true }</span>)
+}
+
+func (a *app) DeleteAd(ID int64, AuthorID int64) (*ads.Ad, error) <span class="cov4" title="6">{
+        _, err := a.usrrepo.GetUserByID(AuthorID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov4" title="6">ad, err := a.adrepo.GetAdByID(ID)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov4" title="5">if ad.AuthorID != AuthorID </span><span class="cov2" title="2">{
+                return nil, ErrForbidden
+        }</span>
+        <span class="cov3" title="3">return a.adrepo.DeleteAd(ID)</span>
+}
+
+func (a *app) CreateUser(nickname string, email string) *users.User <span class="cov9" title="49">{
+        return a.usrrepo.AppendUser(nickname, email)
+}</span>
+
+func (a *app) UpdateUser(ID int64, nickname string, email string) (*users.User, error) <span class="cov3" title="3">{
+        _, err := a.usrrepo.GetUserByID(ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov3" title="3">a.usrrepo.UpdateUser(ID, nickname, email)
+        return a.usrrepo.GetUserByID(ID)</span>
+}
+
+func (a *app) FindByTitle(Title string) []ads.Ad <span class="cov5" title="7">{
+        return a.adrepo.Select(func(a ads.Ad) bool </span><span class="cov9" title="39">{
+                return strings.Contains(a.Title, Title)
+        }</span>)
+}
+
+func (a *app) GetUserByID(ID int64) (*users.User, error) <span class="cov3" title="3">{
+        usr, err := a.usrrepo.GetUserByID(ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov3" title="3">return usr, nil</span>
+}
+
+func (a *app) DeleteUser(ID int64) (*users.User, error) <span class="cov4" title="5">{
+        _, err := a.usrrepo.GetUserByID(ID)
+        if err != nil </span><span class="cov2" title="2">{
+                return nil, ErrNotFound
+        }</span>
+        <span class="cov3" title="3">return a.usrrepo.DeleteUser(ID)</span>
+}
+
+func NewApp(a AdRepository, u UserRepository) App <span class="cov9" title="38">{
+        return &amp;app{adrepo: a, usrrepo: u}
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package grpc
+
+import (
+        context "context"
+        "errors"
+        "homework10/internal/ads"
+        "homework10/internal/app"
+
+        "google.golang.org/protobuf/types/known/timestamppb"
+)
+
+type AdUserService struct {
+        App app.App
+}
+
+func (serv *AdUserService) CreateAd(ctx context.Context, r *CreateAdRequest) (*AdResponse, error) <span class="cov6" title="7">{
+        ad, err := serv.App.CreateAd(r.Title, r.Text, r.UserId)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;AdResponse{}, err
+        }</span>
+        <span class="cov6" title="7">return &amp;AdResponse{Id: ad.ID, Title: ad.Title,
+                Text: ad.Text, AuthorId: ad.AuthorID, Published: ad.Published,
+                CreationDate: timestamppb.New(ad.CreationDate), UpdateTime: timestamppb.New(ad.UpdateTime)}, nil</span>
+}
+
+func (serv *AdUserService) ChangeAdStatus(ctx context.Context, r *ChangeAdStatusRequest) (*AdResponse, error) <span class="cov3" title="3">{
+        ad, err := serv.App.ChangeAdStatus(r.AdId, r.UserId, r.Published)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;AdResponse{}, err
+        }</span>
+        <span class="cov3" title="3">return &amp;AdResponse{Id: ad.ID, Title: ad.Title,
+                Text: ad.Text, AuthorId: ad.AuthorID, Published: ad.Published,
+                CreationDate: timestamppb.New(ad.CreationDate), UpdateTime: timestamppb.New(ad.UpdateTime)}, nil</span>
+}
+
+func (serv *AdUserService) UpdateAd(ctx context.Context, r *UpdateAdRequest) (*AdResponse, error) <span class="cov1" title="1">{
+        ad, err := serv.App.UpdateAd(r.AdId, r.UserId, r.Title, r.Text)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;AdResponse{}, err
+        }</span>
+        <span class="cov1" title="1">return &amp;AdResponse{Id: ad.ID, Title: ad.Title,
+                Text: ad.Text, AuthorId: ad.AuthorID, Published: ad.Published,
+                CreationDate: timestamppb.New(ad.CreationDate), UpdateTime: timestamppb.New(ad.UpdateTime)}, nil</span>
+}
+
+func createListAdResponse(a []ads.Ad) *ListAdResponse <span class="cov7" title="13">{
+        var arr []*AdResponse
+        for _, ad := range a </span><span class="cov10" title="31">{
+                arr = append(arr, &amp;AdResponse{Id: ad.ID, Title: ad.Title,
+                        Text: ad.Text, AuthorId: ad.AuthorID, Published: ad.Published,
+                        CreationDate: timestamppb.New(ad.CreationDate), UpdateTime: timestamppb.New(ad.UpdateTime)})
+        }</span>
+        <span class="cov7" title="13">return &amp;ListAdResponse{List: arr}</span>
+}
+
+func (serv *AdUserService) ListAds(ctx context.Context, m *Mode) (*ListAdResponse, error) <span class="cov7" title="13">{
+        var arr []ads.Ad
+        mode := ModeType_name[int32(m.Mode)]
+
+        var err error
+        if mode == "ByAuthor" </span><span class="cov4" title="4">{
+                data, ok := m.Data.(*Mode_AuthorId)
+                if !ok </span><span class="cov0" title="0">{
+                        return &amp;ListAdResponse{}, errors.New("wrong parameters")
+                }</span>
+                <span class="cov4" title="4">arr, err = serv.App.SelectByAuthor(data.AuthorId)</span>
+        } else<span class="cov6" title="9"> if mode == "ByCreation" </span><span class="cov3" title="3">{
+                data, ok := m.Data.(*Mode_Time)
+                if !ok </span><span class="cov0" title="0">{
+                        return &amp;ListAdResponse{}, errors.New("wrong parameters")
+                }</span>
+                <span class="cov3" title="3">arr = serv.App.SelectByCreation(data.Time.AsTime())</span>
+        } else<span class="cov5" title="6"> if mode == "All" </span><span class="cov1" title="1">{
+                arr = serv.App.SelectAll()
+        }</span> else<span class="cov5" title="5"> if mode == "ByTitle" </span><span class="cov3" title="3">{
+                data, ok := m.Data.(*Mode_Title)
+                if !ok </span><span class="cov0" title="0">{
+                        return &amp;ListAdResponse{}, errors.New("wrong parameters")
+                }</span>
+                <span class="cov3" title="3">arr = serv.App.FindByTitle(data.Title)</span>
+        } else<span class="cov2" title="2"> {
+                arr = serv.App.Select()
+        }</span>
+        <span class="cov7" title="13">if err != nil </span><span class="cov0" title="0">{
+                return &amp;ListAdResponse{}, err
+        }</span>
+        <span class="cov7" title="13">return createListAdResponse(arr), nil</span>
+}
+
+func (serv *AdUserService) CreateUser(ctx context.Context, r *CreateUserRequest) (*UserResponse, error) <span class="cov6" title="9">{
+        usr := serv.App.CreateUser(r.Name, r.Email)
+        return &amp;UserResponse{Id: usr.ID, Name: usr.Nickname, Email: usr.Email}, nil
+}</span>
+
+func (serv *AdUserService) GetUser(ctx context.Context, r *GetUserRequest) (*UserResponse, error) <span class="cov1" title="1">{
+        usr, err := serv.App.GetUserByID(r.Id)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;UserResponse{}, err
+        }</span>
+        <span class="cov1" title="1">return &amp;UserResponse{Id: usr.ID, Name: usr.Nickname, Email: usr.Email}, nil</span>
+}
+
+func (serv *AdUserService) DeleteUser(ctx context.Context, r *DeleteUserRequest) (*UserResponse, error) <span class="cov2" title="2">{
+        usr, err := serv.App.DeleteUser(r.Id)
+        if err != nil </span><span class="cov1" title="1">{
+                return &amp;UserResponse{}, err
+        }</span>
+        <span class="cov1" title="1">return &amp;UserResponse{Id: usr.ID, Name: usr.Nickname, Email: usr.Email}, nil</span>
+}
+
+func (serv *AdUserService) DeleteAd(ctx context.Context, r *DeleteAdRequest) (*AdResponse, error) <span class="cov1" title="1">{
+        ad, err := serv.App.DeleteAd(r.AdId, r.AuthorId)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;AdResponse{}, err
+        }</span>
+        <span class="cov1" title="1">return &amp;AdResponse{Id: ad.ID, Title: ad.Title,
+                Text: ad.Text, AuthorId: ad.AuthorID, Published: ad.Published,
+                CreationDate: timestamppb.New(ad.CreationDate), UpdateTime: timestamppb.New(ad.UpdateTime)}, nil</span>
+}
+
+func (serv *AdUserService) mustEmbedUnimplementedAdServiceServer() {<span class="cov0" title="0">}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Code generated by protoc-gen-go. DO NOT EDIT.
+// source: lesson9/homework/internal/ports/grpc/service.proto
+
+/*
+Package grpc is a generated protocol buffer package.
+
+It is generated from these files:
+        lesson9/homework/internal/ports/grpc/service.proto
+
+It has these top-level messages:
+        Mode
+        CreateAdRequest
+        ChangeAdStatusRequest
+        UpdateAdRequest
+        AdResponse
+        ListAdResponse
+        CreateUserRequest
+        UserResponse
+        GetUserRequest
+        DeleteUserRequest
+        DeleteAdRequest
+*/
+package grpc
+
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
+type ModeType int32
+
+const (
+        ModeType_Default    ModeType = 0
+        ModeType_All        ModeType = 1
+        ModeType_ByAuthor   ModeType = 2
+        ModeType_ByCreation ModeType = 3
+        ModeType_ByTitle    ModeType = 4
+)
+
+var ModeType_name = map[int32]string{
+        0: "Default",
+        1: "All",
+        2: "ByAuthor",
+        3: "ByCreation",
+        4: "ByTitle",
+}
+var ModeType_value = map[string]int32{
+        "Default":    0,
+        "All":        1,
+        "ByAuthor":   2,
+        "ByCreation": 3,
+        "ByTitle":    4,
+}
+
+func (x ModeType) String() string <span class="cov0" title="0">{
+        return proto.EnumName(ModeType_name, int32(x))
+}</span>
+func (ModeType) EnumDescriptor() ([]byte, []int) <span class="cov0" title="0">{ return fileDescriptor0, []int{0} }</span>
+
+type Mode struct {
+        Mode ModeType `protobuf:"varint,1,opt,name=mode,enum=ad.ModeType" json:"mode,omitempty"`
+        // Types that are valid to be assigned to Data:
+        //        *Mode_AuthorId
+        //        *Mode_Title
+        //        *Mode_Time
+        Data isMode_Data `protobuf_oneof:"Data"`
+}
+
+func (m *Mode) Reset()                    <span class="cov10" title="13">{ *m = Mode{} }</span>
+func (m *Mode) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*Mode) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*Mode) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{0} }</span>
+
+type isMode_Data interface{ isMode_Data() }
+
+type Mode_AuthorId struct {
+        AuthorId int64 `protobuf:"varint,2,opt,name=authorId,oneof"`
+}
+type Mode_Title struct {
+        Title string `protobuf:"bytes,3,opt,name=title,oneof"`
+}
+type Mode_Time struct {
+        Time *google_protobuf.Timestamp `protobuf:"bytes,4,opt,name=time,oneof"`
+}
+
+func (*Mode_AuthorId) isMode_Data() {<span class="cov0" title="0">}</span>
+func (*Mode_Title) isMode_Data()    {<span class="cov0" title="0">}</span>
+func (*Mode_Time) isMode_Data()     {<span class="cov0" title="0">}</span>
+
+func (m *Mode) GetData() isMode_Data <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Data
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (m *Mode) GetMode() ModeType <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Mode
+        }</span>
+        <span class="cov0" title="0">return ModeType_Default</span>
+}
+
+func (m *Mode) GetAuthorId() int64 <span class="cov0" title="0">{
+        if x, ok := m.GetData().(*Mode_AuthorId); ok </span><span class="cov0" title="0">{
+                return x.AuthorId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *Mode) GetTitle() string <span class="cov0" title="0">{
+        if x, ok := m.GetData().(*Mode_Title); ok </span><span class="cov0" title="0">{
+                return x.Title
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *Mode) GetTime() *google_protobuf.Timestamp <span class="cov0" title="0">{
+        if x, ok := m.GetData().(*Mode_Time); ok </span><span class="cov0" title="0">{
+                return x.Time
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Mode) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) <span class="cov1" title="1">{
+        return _Mode_OneofMarshaler, _Mode_OneofUnmarshaler, _Mode_OneofSizer, []interface{}{
+                (*Mode_AuthorId)(nil),
+                (*Mode_Title)(nil),
+                (*Mode_Time)(nil),
+        }
+}</span>
+
+func _Mode_OneofMarshaler(msg proto.Message, b *proto.Buffer) error <span class="cov0" title="0">{
+        m := msg.(*Mode)
+        // Data
+        switch x := m.Data.(type) </span>{
+        case *Mode_AuthorId:<span class="cov0" title="0">
+                b.EncodeVarint(2&lt;&lt;3 | proto.WireVarint)
+                b.EncodeVarint(uint64(x.AuthorId))</span>
+        case *Mode_Title:<span class="cov0" title="0">
+                b.EncodeVarint(3&lt;&lt;3 | proto.WireBytes)
+                b.EncodeStringBytes(x.Title)</span>
+        case *Mode_Time:<span class="cov0" title="0">
+                b.EncodeVarint(4&lt;&lt;3 | proto.WireBytes)
+                if err := b.EncodeMessage(x.Time); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        case nil:<span class="cov0" title="0"></span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("Mode.Data has unexpected type %T", x)</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+func _Mode_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) <span class="cov0" title="0">{
+        m := msg.(*Mode)
+        switch tag </span>{
+        case 2:<span class="cov0" title="0"> // Data.authorId
+                if wire != proto.WireVarint </span><span class="cov0" title="0">{
+                        return true, proto.ErrInternalBadWireType
+                }</span>
+                <span class="cov0" title="0">x, err := b.DecodeVarint()
+                m.Data = &amp;Mode_AuthorId{int64(x)}
+                return true, err</span>
+        case 3:<span class="cov0" title="0"> // Data.title
+                if wire != proto.WireBytes </span><span class="cov0" title="0">{
+                        return true, proto.ErrInternalBadWireType
+                }</span>
+                <span class="cov0" title="0">x, err := b.DecodeStringBytes()
+                m.Data = &amp;Mode_Title{x}
+                return true, err</span>
+        case 4:<span class="cov0" title="0"> // Data.time
+                if wire != proto.WireBytes </span><span class="cov0" title="0">{
+                        return true, proto.ErrInternalBadWireType
+                }</span>
+                <span class="cov0" title="0">msg := new(google_protobuf.Timestamp)
+                err := b.DecodeMessage(msg)
+                m.Data = &amp;Mode_Time{msg}
+                return true, err</span>
+        default:<span class="cov0" title="0">
+                return false, nil</span>
+        }
+}
+
+func _Mode_OneofSizer(msg proto.Message) (n int) <span class="cov0" title="0">{
+        m := msg.(*Mode)
+        // Data
+        switch x := m.Data.(type) </span>{
+        case *Mode_AuthorId:<span class="cov0" title="0">
+                n += proto.SizeVarint(2&lt;&lt;3 | proto.WireVarint)
+                n += proto.SizeVarint(uint64(x.AuthorId))</span>
+        case *Mode_Title:<span class="cov0" title="0">
+                n += proto.SizeVarint(3&lt;&lt;3 | proto.WireBytes)
+                n += proto.SizeVarint(uint64(len(x.Title)))
+                n += len(x.Title)</span>
+        case *Mode_Time:<span class="cov0" title="0">
+                s := proto.Size(x.Time)
+                n += proto.SizeVarint(4&lt;&lt;3 | proto.WireBytes)
+                n += proto.SizeVarint(uint64(s))
+                n += s</span>
+        case nil:<span class="cov0" title="0"></span>
+        default:<span class="cov0" title="0">
+                panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))</span>
+        }
+        <span class="cov0" title="0">return n</span>
+}
+
+type CreateAdRequest struct {
+        Title  string `protobuf:"bytes,1,opt,name=title" json:"title,omitempty"`
+        Text   string `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
+        UserId int64  `protobuf:"varint,3,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+}
+
+func (m *CreateAdRequest) Reset()                    <span class="cov7" title="7">{ *m = CreateAdRequest{} }</span>
+func (m *CreateAdRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*CreateAdRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*CreateAdRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{1} }</span>
+
+func (m *CreateAdRequest) GetTitle() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Title
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *CreateAdRequest) GetText() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Text
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *CreateAdRequest) GetUserId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.UserId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+type ChangeAdStatusRequest struct {
+        AdId      int64 `protobuf:"varint,1,opt,name=ad_id,json=adId" json:"ad_id,omitempty"`
+        UserId    int64 `protobuf:"varint,2,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+        Published bool  `protobuf:"varint,3,opt,name=published" json:"published,omitempty"`
+}
+
+func (m *ChangeAdStatusRequest) Reset()                    <span class="cov4" title="3">{ *m = ChangeAdStatusRequest{} }</span>
+func (m *ChangeAdStatusRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*ChangeAdStatusRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*ChangeAdStatusRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{2} }</span>
+
+func (m *ChangeAdStatusRequest) GetAdId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.AdId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *ChangeAdStatusRequest) GetUserId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.UserId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *ChangeAdStatusRequest) GetPublished() bool <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Published
+        }</span>
+        <span class="cov0" title="0">return false</span>
+}
+
+type UpdateAdRequest struct {
+        AdId   int64  `protobuf:"varint,1,opt,name=ad_id,json=adId" json:"ad_id,omitempty"`
+        Title  string `protobuf:"bytes,2,opt,name=title" json:"title,omitempty"`
+        Text   string `protobuf:"bytes,3,opt,name=text" json:"text,omitempty"`
+        UserId int64  `protobuf:"varint,4,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+}
+
+func (m *UpdateAdRequest) Reset()                    <span class="cov1" title="1">{ *m = UpdateAdRequest{} }</span>
+func (m *UpdateAdRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*UpdateAdRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*UpdateAdRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{3} }</span>
+
+func (m *UpdateAdRequest) GetAdId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.AdId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *UpdateAdRequest) GetTitle() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Title
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *UpdateAdRequest) GetText() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Text
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *UpdateAdRequest) GetUserId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.UserId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+type AdResponse struct {
+        Id           int64                      `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+        Title        string                     `protobuf:"bytes,2,opt,name=title" json:"title,omitempty"`
+        Text         string                     `protobuf:"bytes,3,opt,name=text" json:"text,omitempty"`
+        AuthorId     int64                      `protobuf:"varint,4,opt,name=author_id,json=authorId" json:"author_id,omitempty"`
+        Published    bool                       `protobuf:"varint,5,opt,name=published" json:"published,omitempty"`
+        CreationDate *google_protobuf.Timestamp `protobuf:"bytes,6,opt,name=CreationDate,json=creationDate" json:"CreationDate,omitempty"`
+        UpdateTime   *google_protobuf.Timestamp `protobuf:"bytes,7,opt,name=UpdateTime,json=updateTime" json:"UpdateTime,omitempty"`
+}
+
+func (m *AdResponse) Reset()                    <span class="cov9" title="12">{ *m = AdResponse{} }</span>
+func (m *AdResponse) String() string            <span class="cov1" title="1">{ return proto.CompactTextString(m) }</span>
+func (*AdResponse) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*AdResponse) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{4} }</span>
+
+func (m *AdResponse) GetId() int64 <span class="cov7" title="6">{
+        if m != nil </span><span class="cov7" title="6">{
+                return m.Id
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *AdResponse) GetTitle() string <span class="cov1" title="1">{
+        if m != nil </span><span class="cov1" title="1">{
+                return m.Title
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *AdResponse) GetText() string <span class="cov1" title="1">{
+        if m != nil </span><span class="cov1" title="1">{
+                return m.Text
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *AdResponse) GetAuthorId() int64 <span class="cov3" title="2">{
+        if m != nil </span><span class="cov3" title="2">{
+                return m.AuthorId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *AdResponse) GetPublished() bool <span class="cov1" title="1">{
+        if m != nil </span><span class="cov1" title="1">{
+                return m.Published
+        }</span>
+        <span class="cov0" title="0">return false</span>
+}
+
+func (m *AdResponse) GetCreationDate() *google_protobuf.Timestamp <span class="cov3" title="2">{
+        if m != nil </span><span class="cov3" title="2">{
+                return m.CreationDate
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (m *AdResponse) GetUpdateTime() *google_protobuf.Timestamp <span class="cov3" title="2">{
+        if m != nil </span><span class="cov3" title="2">{
+                return m.UpdateTime
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+type ListAdResponse struct {
+        List []*AdResponse `protobuf:"bytes,1,rep,name=list" json:"list,omitempty"`
+}
+
+func (m *ListAdResponse) Reset()                    <span class="cov10" title="13">{ *m = ListAdResponse{} }</span>
+func (m *ListAdResponse) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*ListAdResponse) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*ListAdResponse) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{5} }</span>
+
+func (m *ListAdResponse) GetList() []*AdResponse <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.List
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+type CreateUserRequest struct {
+        Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+        Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
+}
+
+func (m *CreateUserRequest) Reset()                    <span class="cov8" title="9">{ *m = CreateUserRequest{} }</span>
+func (m *CreateUserRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*CreateUserRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*CreateUserRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{6} }</span>
+
+func (m *CreateUserRequest) GetName() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Name
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *CreateUserRequest) GetEmail() string <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Email
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+type UserResponse struct {
+        Id    int64  `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+        Name  string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+        Email string `protobuf:"bytes,3,opt,name=email" json:"email,omitempty"`
+}
+
+func (m *UserResponse) Reset()                    <span class="cov9" title="11">{ *m = UserResponse{} }</span>
+func (m *UserResponse) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*UserResponse) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*UserResponse) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{7} }</span>
+
+func (m *UserResponse) GetId() int64 <span class="cov3" title="2">{
+        if m != nil </span><span class="cov3" title="2">{
+                return m.Id
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *UserResponse) GetName() string <span class="cov4" title="3">{
+        if m != nil </span><span class="cov4" title="3">{
+                return m.Name
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+func (m *UserResponse) GetEmail() string <span class="cov3" title="2">{
+        if m != nil </span><span class="cov3" title="2">{
+                return m.Email
+        }</span>
+        <span class="cov0" title="0">return ""</span>
+}
+
+type GetUserRequest struct {
+        Id int64 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+}
+
+func (m *GetUserRequest) Reset()                    <span class="cov1" title="1">{ *m = GetUserRequest{} }</span>
+func (m *GetUserRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*GetUserRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*GetUserRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{8} }</span>
+
+func (m *GetUserRequest) GetId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Id
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+type DeleteUserRequest struct {
+        Id int64 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+}
+
+func (m *DeleteUserRequest) Reset()                    <span class="cov3" title="2">{ *m = DeleteUserRequest{} }</span>
+func (m *DeleteUserRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*DeleteUserRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{9} }</span>
+
+func (m *DeleteUserRequest) GetId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.Id
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+type DeleteAdRequest struct {
+        AdId     int64 `protobuf:"varint,1,opt,name=ad_id,json=adId" json:"ad_id,omitempty"`
+        AuthorId int64 `protobuf:"varint,2,opt,name=author_id,json=authorId" json:"author_id,omitempty"`
+}
+
+func (m *DeleteAdRequest) Reset()                    <span class="cov1" title="1">{ *m = DeleteAdRequest{} }</span>
+func (m *DeleteAdRequest) String() string            <span class="cov0" title="0">{ return proto.CompactTextString(m) }</span>
+func (*DeleteAdRequest) ProtoMessage()               {<span class="cov0" title="0">}</span>
+func (*DeleteAdRequest) Descriptor() ([]byte, []int) <span class="cov1" title="1">{ return fileDescriptor0, []int{10} }</span>
+
+func (m *DeleteAdRequest) GetAdId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.AdId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func (m *DeleteAdRequest) GetAuthorId() int64 <span class="cov0" title="0">{
+        if m != nil </span><span class="cov0" title="0">{
+                return m.AuthorId
+        }</span>
+        <span class="cov0" title="0">return 0</span>
+}
+
+func init() <span class="cov1" title="1">{
+        proto.RegisterType((*Mode)(nil), "ad.Mode")
+        proto.RegisterType((*CreateAdRequest)(nil), "ad.CreateAdRequest")
+        proto.RegisterType((*ChangeAdStatusRequest)(nil), "ad.ChangeAdStatusRequest")
+        proto.RegisterType((*UpdateAdRequest)(nil), "ad.UpdateAdRequest")
+        proto.RegisterType((*AdResponse)(nil), "ad.AdResponse")
+        proto.RegisterType((*ListAdResponse)(nil), "ad.ListAdResponse")
+        proto.RegisterType((*CreateUserRequest)(nil), "ad.CreateUserRequest")
+        proto.RegisterType((*UserResponse)(nil), "ad.UserResponse")
+        proto.RegisterType((*GetUserRequest)(nil), "ad.GetUserRequest")
+        proto.RegisterType((*DeleteUserRequest)(nil), "ad.DeleteUserRequest")
+        proto.RegisterType((*DeleteAdRequest)(nil), "ad.DeleteAdRequest")
+        proto.RegisterEnum("ad.ModeType", ModeType_name, ModeType_value)
+}</span>
+
+func init() <span class="cov1" title="1">{ proto.RegisterFile("lesson9/homework/internal/ports/grpc/service.proto", fileDescriptor0) }</span>
+
+var fileDescriptor0 = []byte{
+        // 700 bytes of a gzipped FileDescriptorProto
+        0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xdd, 0x6e, 0xd3, 0x4c,
+        0x10, 0x8d, 0x7f, 0x9a, 0x38, 0xd3, 0x28, 0x4d, 0xb7, 0x5f, 0x3f, 0x42, 0xa8, 0x44, 0x64, 0x10,
+        0x0a, 0x5c, 0xc4, 0x34, 0x20, 0x55, 0x20, 0x15, 0x29, 0x69, 0x24, 0x52, 0x01, 0x37, 0x6e, 0x7a,
+        0xc3, 0x0d, 0xda, 0x66, 0xb7, 0x89, 0x85, 0x63, 0x1b, 0xef, 0x1a, 0xc8, 0x9b, 0xf0, 0x1e, 0x3c,
+        0x1f, 0x12, 0xf2, 0x2e, 0x1b, 0xff, 0xd4, 0x55, 0xe1, 0xce, 0xbb, 0x3b, 0x33, 0xe7, 0xcc, 0x9c,
+        0x33, 0x09, 0x8c, 0x7c, 0xca, 0x58, 0x18, 0xbc, 0x72, 0x56, 0xe1, 0x9a, 0x7e, 0x0b, 0xe3, 0xcf,
+        0x8e, 0x17, 0x70, 0x1a, 0x07, 0xd8, 0x77, 0xa2, 0x30, 0xe6, 0xcc, 0x59, 0xc6, 0xd1, 0xc2, 0x61,
+        0x34, 0xfe, 0xea, 0x2d, 0xe8, 0x30, 0x8a, 0x43, 0x1e, 0x22, 0x1d, 0x93, 0xde, 0xc3, 0x65, 0x18,
+        0x2e, 0x7d, 0xea, 0x88, 0x9b, 0xab, 0xe4, 0xda, 0xe1, 0xde, 0x9a, 0x32, 0x8e, 0xd7, 0x91, 0x0c,
+        0xb2, 0x7f, 0x68, 0x60, 0x7e, 0x08, 0x09, 0x45, 0x7d, 0x30, 0xd7, 0x21, 0xa1, 0x5d, 0xad, 0xaf,
+        0x0d, 0xda, 0xa3, 0xd6, 0x10, 0x93, 0x61, 0x7a, 0x3f, 0xdf, 0x44, 0xd4, 0x15, 0x2f, 0xe8, 0x08,
+        0x2c, 0x9c, 0xf0, 0x55, 0x18, 0x9f, 0x93, 0xae, 0xde, 0xd7, 0x06, 0xc6, 0xac, 0xe6, 0x6e, 0x6f,
+        0xd0, 0xff, 0xb0, 0xc3, 0x3d, 0xee, 0xd3, 0xae, 0xd1, 0xd7, 0x06, 0xcd, 0x59, 0xcd, 0x95, 0x47,
+        0xf4, 0x1c, 0xcc, 0x14, 0xb3, 0x6b, 0xf6, 0xb5, 0xc1, 0xee, 0xa8, 0x37, 0x94, 0x84, 0x86, 0x8a,
+        0xd0, 0x70, 0xae, 0x08, 0xcd, 0x6a, 0xae, 0x88, 0x9c, 0xd4, 0xc1, 0x9c, 0x62, 0x8e, 0xed, 0x39,
+        0xec, 0x9d, 0xc5, 0x14, 0x73, 0x3a, 0x26, 0x2e, 0xfd, 0x92, 0x50, 0xc6, 0xd1, 0x7f, 0x0a, 0x24,
+        0x65, 0xd9, 0x54, 0x10, 0x08, 0x4c, 0x4e, 0xbf, 0x73, 0x41, 0xaa, 0xe9, 0x8a, 0x6f, 0x74, 0x0f,
+        0x1a, 0x09, 0xa3, 0xf1, 0x27, 0x8f, 0x08, 0x42, 0x86, 0x5b, 0x4f, 0x8f, 0xe7, 0xc4, 0x5e, 0xc0,
+        0xe1, 0xd9, 0x0a, 0x07, 0x4b, 0x3a, 0x26, 0x17, 0x1c, 0xf3, 0x84, 0xa9, 0xda, 0x07, 0xb0, 0x83,
+        0x49, 0x1a, 0xaf, 0x89, 0x78, 0x13, 0x93, 0x73, 0x92, 0x2f, 0xa3, 0xe7, 0xcb, 0xa0, 0x23, 0x68,
+        0x46, 0xc9, 0x95, 0xef, 0xb1, 0x15, 0x95, 0x08, 0x96, 0x9b, 0x5d, 0xd8, 0x1e, 0xec, 0x5d, 0x46,
+        0xa4, 0x40, 0xbd, 0xb2, 0xfc, 0xb6, 0x1f, 0xbd, 0xaa, 0x1f, 0xa3, 0xba, 0x1f, 0xb3, 0xd0, 0xcf,
+        0x2f, 0x0d, 0x20, 0x45, 0x61, 0x51, 0x18, 0x30, 0x8a, 0xda, 0xa0, 0x6f, 0x31, 0x74, 0xef, 0x5f,
+        0x10, 0x1e, 0x40, 0x53, 0x8a, 0x99, 0x61, 0x64, 0xea, 0x16, 0xda, 0xdd, 0x29, 0xb5, 0x8b, 0xde,
+        0x40, 0x4b, 0x28, 0xe5, 0x85, 0xc1, 0x14, 0x73, 0xda, 0xad, 0xdf, 0xa5, 0xb5, 0xdb, 0x5a, 0xe4,
+        0xe2, 0xd1, 0x6b, 0x00, 0x39, 0xae, 0x34, 0xa0, 0xdb, 0xb8, 0x33, 0x1b, 0x92, 0x6d, 0xb4, 0xfd,
+        0x12, 0xda, 0xef, 0x3d, 0xc6, 0x73, 0x23, 0xb0, 0xc1, 0xf4, 0x3d, 0xc6, 0xbb, 0x5a, 0xdf, 0x18,
+        0xec, 0x8e, 0xda, 0xa9, 0x93, 0xb3, 0x57, 0x57, 0xbc, 0xd9, 0xa7, 0xb0, 0x2f, 0xbd, 0x75, 0xc9,
+        0x68, 0xac, 0x24, 0x42, 0x60, 0x06, 0x78, 0xad, 0xcc, 0x25, 0xbe, 0xd3, 0xf9, 0xd1, 0x35, 0xf6,
+        0x7c, 0x35, 0x3f, 0x71, 0xb0, 0x67, 0xd0, 0x92, 0x89, 0xb7, 0x4c, 0x5d, 0x55, 0xd2, 0xab, 0x2a,
+        0x19, 0xf9, 0x4a, 0x7d, 0x68, 0xbf, 0xa5, 0x3c, 0xcf, 0xa2, 0x54, 0xcb, 0x7e, 0x04, 0xfb, 0x53,
+        0xea, 0xd3, 0x22, 0xd5, 0x72, 0xd0, 0x19, 0xec, 0xc9, 0xa0, 0x3b, 0x0c, 0x57, 0x10, 0x59, 0x2f,
+        0x8a, 0xfc, 0xec, 0x1d, 0x58, 0x6a, 0xe5, 0xd1, 0x2e, 0x34, 0xa6, 0xf4, 0x1a, 0x27, 0x3e, 0xef,
+        0xd4, 0x50, 0x03, 0x8c, 0xb1, 0xef, 0x77, 0x34, 0xd4, 0x02, 0x6b, 0xb2, 0x19, 0x8b, 0xf8, 0x8e,
+        0x8e, 0xda, 0x00, 0x93, 0x8d, 0x12, 0xbe, 0x63, 0xa4, 0x39, 0x93, 0xcd, 0x3c, 0x35, 0x58, 0xc7,
+        0x1c, 0xfd, 0x34, 0xa0, 0x39, 0x26, 0x17, 0xf2, 0x17, 0x09, 0x1d, 0x83, 0xa5, 0x76, 0x19, 0x1d,
+        0xa4, 0x8a, 0x94, 0x36, 0xbb, 0x57, 0x92, 0xc9, 0xae, 0xa1, 0x53, 0x68, 0x17, 0x17, 0x15, 0xdd,
+        0x17, 0x89, 0x55, 0xcb, 0x5b, 0x91, 0x7e, 0x0c, 0x96, 0x5a, 0x41, 0x89, 0x58, 0x5a, 0xc8, 0x8a,
+        0x94, 0xa7, 0xd0, 0x90, 0x56, 0x62, 0xc8, 0x52, 0xbf, 0x7f, 0x3d, 0x94, 0x7e, 0x15, 0x1d, 0x66,
+        0xd7, 0xd0, 0x09, 0x40, 0xe6, 0x1f, 0x74, 0x98, 0x75, 0x94, 0x13, 0xa9, 0xd7, 0x11, 0xb0, 0x39,
+        0x9f, 0x08, 0x5a, 0x8d, 0x3f, 0x7a, 0x23, 0x51, 0xb9, 0x28, 0x7e, 0x65, 0xca, 0x09, 0x40, 0x66,
+        0x00, 0x89, 0x75, 0xc3, 0x10, 0xb7, 0x60, 0x59, 0xca, 0x14, 0x72, 0x04, 0x25, 0x8b, 0xdc, 0x1c,
+        0xc1, 0xe4, 0xc9, 0xc7, 0xc7, 0x7f, 0xf3, 0x4f, 0x73, 0x55, 0x17, 0x5b, 0xf9, 0xe2, 0x77, 0x00,
+        0x00, 0x00, 0xff, 0xff, 0x88, 0x7d, 0x82, 0x25, 0x98, 0x06, 0x00, 0x00,
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Code generated by protoc-gen-go-grpc. DO NOT EDIT.
+// versions:
+// - protoc-gen-go-grpc v1.3.0
+// - protoc             (unknown)
+// source: lesson9/homework/internal/ports/grpc/service.proto
+
+package grpc
+
+import (
+        context "context"
+        grpc "google.golang.org/grpc"
+        codes "google.golang.org/grpc/codes"
+        status "google.golang.org/grpc/status"
+)
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
+const _ = grpc.SupportPackageIsVersion7
+
+const (
+        AdService_CreateAd_FullMethodName       = "/ad.AdService/CreateAd"
+        AdService_ChangeAdStatus_FullMethodName = "/ad.AdService/ChangeAdStatus"
+        AdService_UpdateAd_FullMethodName       = "/ad.AdService/UpdateAd"
+        AdService_ListAds_FullMethodName        = "/ad.AdService/ListAds"
+        AdService_CreateUser_FullMethodName     = "/ad.AdService/CreateUser"
+        AdService_GetUser_FullMethodName        = "/ad.AdService/GetUser"
+        AdService_DeleteUser_FullMethodName     = "/ad.AdService/DeleteUser"
+        AdService_DeleteAd_FullMethodName       = "/ad.AdService/DeleteAd"
+)
+
+// AdServiceClient is the client API for AdService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type AdServiceClient interface {
+        CreateAd(ctx context.Context, in *CreateAdRequest, opts ...grpc.CallOption) (*AdResponse, error)
+        ChangeAdStatus(ctx context.Context, in *ChangeAdStatusRequest, opts ...grpc.CallOption) (*AdResponse, error)
+        UpdateAd(ctx context.Context, in *UpdateAdRequest, opts ...grpc.CallOption) (*AdResponse, error)
+        ListAds(ctx context.Context, in *Mode, opts ...grpc.CallOption) (*ListAdResponse, error)
+        CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+        GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+        DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+        DeleteAd(ctx context.Context, in *DeleteAdRequest, opts ...grpc.CallOption) (*AdResponse, error)
+}
+
+type adServiceClient struct {
+        cc grpc.ClientConnInterface
+}
+
+func NewAdServiceClient(cc grpc.ClientConnInterface) AdServiceClient <span class="cov6" title="9">{
+        return &amp;adServiceClient{cc}
+}</span>
+
+func (c *adServiceClient) CreateAd(ctx context.Context, in *CreateAdRequest, opts ...grpc.CallOption) (*AdResponse, error) <span class="cov5" title="7">{
+        out := new(AdResponse)
+        err := c.cc.Invoke(ctx, AdService_CreateAd_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov5" title="7">return out, nil</span>
+}
+
+func (c *adServiceClient) ChangeAdStatus(ctx context.Context, in *ChangeAdStatusRequest, opts ...grpc.CallOption) (*AdResponse, error) <span class="cov3" title="3">{
+        out := new(AdResponse)
+        err := c.cc.Invoke(ctx, AdService_ChangeAdStatus_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov3" title="3">return out, nil</span>
+}
+
+func (c *adServiceClient) UpdateAd(ctx context.Context, in *UpdateAdRequest, opts ...grpc.CallOption) (*AdResponse, error) <span class="cov1" title="1">{
+        out := new(AdResponse)
+        err := c.cc.Invoke(ctx, AdService_UpdateAd_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return out, nil</span>
+}
+
+func (c *adServiceClient) ListAds(ctx context.Context, in *Mode, opts ...grpc.CallOption) (*ListAdResponse, error) <span class="cov7" title="13">{
+        out := new(ListAdResponse)
+        err := c.cc.Invoke(ctx, AdService_ListAds_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov7" title="13">return out, nil</span>
+}
+
+func (c *adServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error) <span class="cov6" title="9">{
+        out := new(UserResponse)
+        err := c.cc.Invoke(ctx, AdService_CreateUser_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov6" title="9">return out, nil</span>
+}
+
+func (c *adServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error) <span class="cov1" title="1">{
+        out := new(UserResponse)
+        err := c.cc.Invoke(ctx, AdService_GetUser_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return out, nil</span>
+}
+
+func (c *adServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*UserResponse, error) <span class="cov2" title="2">{
+        out := new(UserResponse)
+        err := c.cc.Invoke(ctx, AdService_DeleteUser_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return out, nil</span>
+}
+
+func (c *adServiceClient) DeleteAd(ctx context.Context, in *DeleteAdRequest, opts ...grpc.CallOption) (*AdResponse, error) <span class="cov1" title="1">{
+        out := new(AdResponse)
+        err := c.cc.Invoke(ctx, AdService_DeleteAd_FullMethodName, in, out, opts...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return out, nil</span>
+}
+
+// AdServiceServer is the server API for AdService service.
+// All implementations must embed UnimplementedAdServiceServer
+// for forward compatibility
+type AdServiceServer interface {
+        CreateAd(context.Context, *CreateAdRequest) (*AdResponse, error)
+        ChangeAdStatus(context.Context, *ChangeAdStatusRequest) (*AdResponse, error)
+        UpdateAd(context.Context, *UpdateAdRequest) (*AdResponse, error)
+        ListAds(context.Context, *Mode) (*ListAdResponse, error)
+        CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error)
+        GetUser(context.Context, *GetUserRequest) (*UserResponse, error)
+        DeleteUser(context.Context, *DeleteUserRequest) (*UserResponse, error)
+        DeleteAd(context.Context, *DeleteAdRequest) (*AdResponse, error)
+        mustEmbedUnimplementedAdServiceServer()
+}
+
+// UnimplementedAdServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedAdServiceServer struct {
+}
+
+func (UnimplementedAdServiceServer) CreateAd(context.Context, *CreateAdRequest) (*AdResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method CreateAd not implemented")
+}</span>
+func (UnimplementedAdServiceServer) ChangeAdStatus(context.Context, *ChangeAdStatusRequest) (*AdResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method ChangeAdStatus not implemented")
+}</span>
+func (UnimplementedAdServiceServer) UpdateAd(context.Context, *UpdateAdRequest) (*AdResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method UpdateAd not implemented")
+}</span>
+func (UnimplementedAdServiceServer) ListAds(context.Context, *Mode) (*ListAdResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method ListAds not implemented")
+}</span>
+func (UnimplementedAdServiceServer) CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}</span>
+func (UnimplementedAdServiceServer) GetUser(context.Context, *GetUserRequest) (*UserResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}</span>
+func (UnimplementedAdServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*UserResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}</span>
+func (UnimplementedAdServiceServer) DeleteAd(context.Context, *DeleteAdRequest) (*AdResponse, error) <span class="cov0" title="0">{
+        return nil, status.Errorf(codes.Unimplemented, "method DeleteAd not implemented")
+}</span>
+func (UnimplementedAdServiceServer) mustEmbedUnimplementedAdServiceServer() {<span class="cov0" title="0">}</span>
+
+// UnsafeAdServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AdServiceServer will
+// result in compilation errors.
+type UnsafeAdServiceServer interface {
+        mustEmbedUnimplementedAdServiceServer()
+}
+
+func RegisterAdServiceServer(s grpc.ServiceRegistrar, srv AdServiceServer) <span class="cov10" title="38">{
+        s.RegisterService(&amp;AdService_ServiceDesc, srv)
+}</span>
+
+func _AdService_CreateAd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov5" title="7">{
+        in := new(CreateAdRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov5" title="7">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).CreateAd(ctx, in)
+        }</span>
+        <span class="cov5" title="7">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_CreateAd_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov5" title="7">{
+                return srv.(AdServiceServer).CreateAd(ctx, req.(*CreateAdRequest))
+        }</span>
+        <span class="cov5" title="7">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_ChangeAdStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov3" title="3">{
+        in := new(ChangeAdStatusRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov3" title="3">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).ChangeAdStatus(ctx, in)
+        }</span>
+        <span class="cov3" title="3">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_ChangeAdStatus_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov3" title="3">{
+                return srv.(AdServiceServer).ChangeAdStatus(ctx, req.(*ChangeAdStatusRequest))
+        }</span>
+        <span class="cov3" title="3">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_UpdateAd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov1" title="1">{
+        in := new(UpdateAdRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).UpdateAd(ctx, in)
+        }</span>
+        <span class="cov1" title="1">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_UpdateAd_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov1" title="1">{
+                return srv.(AdServiceServer).UpdateAd(ctx, req.(*UpdateAdRequest))
+        }</span>
+        <span class="cov1" title="1">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_ListAds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov7" title="13">{
+        in := new(Mode)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov7" title="13">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).ListAds(ctx, in)
+        }</span>
+        <span class="cov7" title="13">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_ListAds_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov7" title="13">{
+                return srv.(AdServiceServer).ListAds(ctx, req.(*Mode))
+        }</span>
+        <span class="cov7" title="13">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov6" title="9">{
+        in := new(CreateUserRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov6" title="9">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).CreateUser(ctx, in)
+        }</span>
+        <span class="cov6" title="9">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_CreateUser_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov6" title="9">{
+                return srv.(AdServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
+        }</span>
+        <span class="cov6" title="9">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov1" title="1">{
+        in := new(GetUserRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).GetUser(ctx, in)
+        }</span>
+        <span class="cov1" title="1">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_GetUser_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov1" title="1">{
+                return srv.(AdServiceServer).GetUser(ctx, req.(*GetUserRequest))
+        }</span>
+        <span class="cov1" title="1">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov2" title="2">{
+        in := new(DeleteUserRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov2" title="2">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).DeleteUser(ctx, in)
+        }</span>
+        <span class="cov2" title="2">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_DeleteUser_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov2" title="2">{
+                return srv.(AdServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
+        }</span>
+        <span class="cov2" title="2">return interceptor(ctx, in, info, handler)</span>
+}
+
+func _AdService_DeleteAd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) <span class="cov1" title="1">{
+        in := new(DeleteAdRequest)
+        if err := dec(in); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">if interceptor == nil </span><span class="cov0" title="0">{
+                return srv.(AdServiceServer).DeleteAd(ctx, in)
+        }</span>
+        <span class="cov1" title="1">info := &amp;grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: AdService_DeleteAd_FullMethodName,
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) </span><span class="cov1" title="1">{
+                return srv.(AdServiceServer).DeleteAd(ctx, req.(*DeleteAdRequest))
+        }</span>
+        <span class="cov1" title="1">return interceptor(ctx, in, info, handler)</span>
+}
+
+// AdService_ServiceDesc is the grpc.ServiceDesc for AdService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AdService_ServiceDesc = grpc.ServiceDesc{
+        ServiceName: "ad.AdService",
+        HandlerType: (*AdServiceServer)(nil),
+        Methods: []grpc.MethodDesc{
+                {
+                        MethodName: "CreateAd",
+                        Handler:    _AdService_CreateAd_Handler,
+                },
+                {
+                        MethodName: "ChangeAdStatus",
+                        Handler:    _AdService_ChangeAdStatus_Handler,
+                },
+                {
+                        MethodName: "UpdateAd",
+                        Handler:    _AdService_UpdateAd_Handler,
+                },
+                {
+                        MethodName: "ListAds",
+                        Handler:    _AdService_ListAds_Handler,
+                },
+                {
+                        MethodName: "CreateUser",
+                        Handler:    _AdService_CreateUser_Handler,
+                },
+                {
+                        MethodName: "GetUser",
+                        Handler:    _AdService_GetUser_Handler,
+                },
+                {
+                        MethodName: "DeleteUser",
+                        Handler:    _AdService_DeleteUser_Handler,
+                },
+                {
+                        MethodName: "DeleteAd",
+                        Handler:    _AdService_DeleteAd_Handler,
+                },
+        },
+        Streams:  []grpc.StreamDesc{},
+        Metadata: "lesson9/homework/internal/ports/grpc/service.proto",
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package httpgin
+
+import (
+        "encoding/json"
+        "homework10/internal/ads"
+        "homework10/internal/app"
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+)
+
+func GetAdByID(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov2" title="2">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov2" title="2">ad, err := a.GetAdByID(int64(id))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusNotFound)
+                        return
+                }</span>
+                <span class="cov2" title="2">c.JSON(http.StatusOK, adResponse{*ad})</span>
+        }
+
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func CreateAd(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov10" title="44">{
+                body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov10" title="44">var data createAdRequest
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov10" title="44">ad, err := a.CreateAd(data.Title, data.Text, data.UserID)
+                if err != nil </span><span class="cov5" title="7">{
+                        if err == app.ErrBadRequest </span><span class="cov5" title="6">{
+                                c.Status(http.StatusBadRequest)
+                        }</span> else<span class="cov1" title="1"> {
+                                c.Status(http.StatusNotFound)
+                        }</span>
+                        <span class="cov5" title="7">return</span>
+                }
+                <span class="cov9" title="37">c.JSON(http.StatusOK, adResponse{*ad})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func ChangeAdStatus(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov6" title="12">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov6" title="12">body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov6" title="12">var data changeAdStatusRequest
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov6" title="12">ad, err := a.ChangeAdStatus(int64(id), data.UserID, data.Published)
+                if err != nil </span><span class="cov1" title="1">{
+                        if err == app.ErrForbidden </span><span class="cov1" title="1">{
+                                c.Status(http.StatusForbidden)
+                        }</span> else<span class="cov0" title="0"> {
+                                c.Status(http.StatusNotFound)
+                        }</span>
+                        <span class="cov1" title="1">return</span>
+                }
+                <span class="cov6" title="11">c.JSON(http.StatusOK, adResponse{*ad})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func UpdateAd(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov5" title="7">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov5" title="7">body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov5" title="7">var data updateAdRequest
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov5" title="7">ad, err := a.UpdateAd(int64(id), data.UserID, data.Title, data.Text)
+                if err != nil </span><span class="cov4" title="5">{
+                        if err == app.ErrForbidden </span><span class="cov1" title="1">{
+                                c.Status(http.StatusForbidden)
+                        }</span> else<span class="cov4" title="4"> if err == app.ErrBadRequest </span><span class="cov4" title="4">{
+                                c.Status(http.StatusBadRequest)
+                        }</span> else<span class="cov0" title="0"> {
+                                c.Status(http.StatusNotFound)
+                        }</span>
+                        <span class="cov4" title="5">return</span>
+                }
+                <span class="cov2" title="2">c.JSON(http.StatusOK, adResponse{*ad})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func Select(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov7" title="16">{
+                body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusOK, adsResponse{a.Select()})
+                        return
+                }</span>
+                <span class="cov7" title="16">var data selectAdRequest
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov3" title="3">{
+                        c.JSON(http.StatusOK, adsResponse{a.Select()})
+                        return
+                }</span>
+                <span class="cov7" title="13">var arr []ads.Ad
+                if data.ByAuthor </span><span class="cov4" title="5">{
+                        arr, err = a.SelectByAuthor(data.AuthorID)
+                }</span> else<span class="cov5" title="8"> if data.ByCreation </span><span class="cov4" title="5">{
+                        arr = a.SelectByCreation(data.CreationTime)
+                }</span> else<span class="cov3" title="3"> if data.All </span><span class="cov3" title="3">{
+                        arr = a.SelectAll()
+                }</span> else<span class="cov0" title="0"> {
+                        arr = a.Select()
+                }</span>
+                <span class="cov7" title="13">if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                }</span>
+                <span class="cov7" title="13">c.JSON(http.StatusOK, adsResponse{arr})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func CreateUser(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov9" title="40">{
+                body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov9" title="40">var data createOrUpdateUser
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov9" title="40">usr := a.CreateUser(data.Nickname, data.Email)
+                c.JSON(http.StatusOK, userResponse{*usr})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func UpdateUser(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov3" title="3">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov3" title="3">body, err := c.GetRawData()
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov3" title="3">var data createOrUpdateUser
+                err = json.Unmarshal(body, &amp;data)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err})
+                        return
+                }</span>
+                <span class="cov3" title="3">usr, err := a.UpdateUser(int64(id), data.Nickname, data.Email)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusNotFound)
+                        return
+                }</span>
+                <span class="cov3" title="3">c.JSON(http.StatusOK, userResponse{*usr})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func FindAdByTitle(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov4" title="4">{
+                title := c.Query("title")
+                if title == "" </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov4" title="4">c.JSON(http.StatusOK, adsResponse{a.FindByTitle(title)})</span>
+        }
+
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func GetUserByID(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov2" title="2">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov2" title="2">usr, err := a.GetUserByID(int64(id))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusNotFound)
+                        return
+                }</span>
+                <span class="cov2" title="2">c.JSON(http.StatusOK, userResponse{*usr})</span>
+        }
+
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func DeleteUserByID(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov3" title="3">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov3" title="3">usr, err := a.DeleteUser(int64(id))
+                if err != nil </span><span class="cov1" title="1">{
+                        c.Status(http.StatusNotFound)
+                        return
+                }</span>
+                <span class="cov2" title="2">c.JSON(http.StatusOK, userResponse{*usr})</span>
+        }
+
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+
+func DeleteAdByID(a app.App) gin.HandlerFunc <span class="cov9" title="38">{
+        fn := func(c *gin.Context) </span><span class="cov4" title="4">{
+                id, err := strconv.Atoi(c.Param("id"))
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov4" title="4">author := c.Query("author")
+                if author == "" </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov4" title="4">authorID, err := strconv.Atoi(author)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.Status(http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov4" title="4">ad, err := a.DeleteAd(int64(id), int64(authorID))
+                if err != nil </span><span class="cov2" title="2">{
+                        if err == app.ErrForbidden </span><span class="cov1" title="1">{
+                                c.Status(http.StatusForbidden)
+                        }</span> else<span class="cov1" title="1"> if err == app.ErrBadRequest </span><span class="cov0" title="0">{
+                                c.Status(http.StatusBadRequest)
+                        }</span> else<span class="cov1" title="1"> {
+                                c.Status(http.StatusNotFound)
+                        }</span>
+                        <span class="cov2" title="2">return</span>
+                }
+                <span class="cov2" title="2">c.JSON(http.StatusOK, adResponse{*ad})</span>
+        }
+        <span class="cov9" title="38">return gin.HandlerFunc(fn)</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package httpgin
+
+import (
+        "homework10/internal/app"
+        "log"
+        "net/http"
+        "runtime"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+func AppRouter(r *gin.RouterGroup, a app.App) <span class="cov7" title="38">{
+
+        r.Use(gin.CustomRecovery(CustomPanicRecover))
+        r.Use(CustomLogger)
+
+        r.GET("/ads/:id", GetAdByID(a))
+        r.POST("/ads", CreateAd(a))
+        r.PUT("/ads/:id/status", ChangeAdStatus(a))
+        r.PUT("/ads/:id", UpdateAd(a))
+        r.GET("/ads", Select(a))
+        r.GET("/ads/title", FindAdByTitle(a))
+        r.DELETE("/ads/:id", DeleteAdByID(a))
+
+        r.POST("/users", CreateUser(a))
+        r.PUT("/users/:id", UpdateUser(a))
+        r.GET("/users/:id", GetUserByID(a))
+        r.DELETE("/users/:id", DeleteUserByID(a))
+
+}</span>
+
+func CustomLogger(c *gin.Context) <span class="cov10" title="137">{
+        t := time.Now().UTC()
+        c.Next()
+        latency := time.Since(t)
+        status := c.Writer.Status()
+
+        log.Println("latency", latency, "method", c.Request.Method, "path", c.Request.URL.Path, "status", status)
+}</span>
+
+func CustomPanicRecover(c *gin.Context, err any) <span class="cov0" title="0">{
+        log.Println("panic: " + err.(error).Error())
+        buf := make([]byte, 2048)
+        n := runtime.Stack(buf, false)
+        log.Println(string(buf[:n]))
+        c.AbortWithStatusJSON(http.StatusInternalServerError, err.(error).Error())
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package ports
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "homework10/internal/adapters/adrepo"
+        "homework10/internal/adapters/userrepo"
+        "homework10/internal/app"
+        grpc_func "homework10/internal/ports/grpc"
+        "homework10/internal/ports/httpgin"
+        "log"
+        "net"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+        "golang.org/x/sync/errgroup"
+        grpc "google.golang.org/grpc"
+        codes "google.golang.org/grpc/codes"
+        status "google.golang.org/grpc/status"
+)
+
+func NewHTTPServer(port string, a app.App) *http.Server <span class="cov10" title="38">{
+        gin.SetMode(gin.ReleaseMode)
+        handler := gin.New()
+        api := handler.Group("/api/v1")
+        httpgin.AppRouter(api, a)
+        s := &amp;http.Server{Addr: port, Handler: handler}
+        return s
+}</span>
+
+func NewGRPCServer(port string, a app.App) *grpc.Server <span class="cov10" title="38">{
+        customFunc := func(p interface{}) (err error) </span><span class="cov0" title="0">{
+                return status.Errorf(codes.Unknown, "panic triggered: %v", p)
+        }</span>
+        <span class="cov10" title="38">opts := []grpc_recovery.Option{
+                grpc_recovery.WithRecoveryHandler(customFunc),
+        }
+        service := &amp;grpc_func.AdUserService{App: a}
+        server := grpc.NewServer(grpc.ChainUnaryInterceptor(UnaryServerInterceptor),
+                grpc.ChainUnaryInterceptor(grpc_recovery.UnaryServerInterceptor(opts...)))
+        grpc_func.RegisterAdServiceServer(server, service)
+        return server</span>
+}
+
+func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) <span class="cov9" title="37">{
+        log.Println(time.Now().GoString() + ": " + info.FullMethod)
+
+        return handler(ctx, req)
+}</span>
+
+const (
+        grpcPort = ":50054"
+        httpPort = ":18080"
+)
+
+func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server) <span class="cov9" title="37">{
+        a := app.NewApp(adrepo.New(), userrepo.New())
+        return CreateServerWithExternalApp(ctx, ch, a)
+}</span>
+
+func CreateServerWithExternalApp(ctx context.Context, ch chan int, a app.App) (*http.Server, *grpc.Server) <span class="cov10" title="38">{
+
+        lis, err := net.Listen("tcp", grpcPort)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("failed to listen: %v", err)
+        }</span>
+
+        <span class="cov10" title="38">httpServer := NewHTTPServer(httpPort, a)
+        grpcServer := NewGRPCServer(grpcPort, a)
+
+        eg, ctx := errgroup.WithContext(ctx)
+
+        sigQuit := make(chan os.Signal, 1)
+        signal.Ignore(syscall.SIGHUP, syscall.SIGPIPE)
+        signal.Notify(sigQuit, syscall.SIGINT, syscall.SIGTERM)
+
+        go func() </span><span class="cov10" title="38">{
+                eg.Go(func() error </span><span class="cov10" title="38">{
+                        select </span>{
+                        case s := &lt;-sigQuit:<span class="cov0" title="0">
+                                log.Printf("captured signal: %v\n", s)
+                                return fmt.Errorf("captured signal: %v", s)</span>
+                        case &lt;-ctx.Done():<span class="cov10" title="38">
+                                return nil</span>
+                        }
+                })
+
+                // run grpc server
+                <span class="cov10" title="38">eg.Go(func() error </span><span class="cov10" title="38">{
+                        log.Printf("starting grpc server, listening on %s\n", grpcPort)
+                        defer log.Printf("close grpc server listening on %s\n", grpcPort)
+
+                        errCh := make(chan error)
+
+                        defer func() </span><span class="cov10" title="38">{
+                                grpcServer.GracefulStop()
+                                _ = lis.Close()
+
+                                close(errCh)
+                        }</span>()
+
+                        <span class="cov10" title="38">go func() </span><span class="cov10" title="38">{
+                                if err := grpcServer.Serve(lis); err != nil </span><span class="cov0" title="0">{
+                                        errCh &lt;- err
+                                }</span>
+                        }()
+
+                        <span class="cov10" title="38">select </span>{
+                        case &lt;-ctx.Done():<span class="cov10" title="38">
+                                return ctx.Err()</span>
+                        case err := &lt;-errCh:<span class="cov0" title="0">
+                                return fmt.Errorf("grpc server can't listen and serve requests: %w", err)</span>
+                        }
+                })
+
+                <span class="cov10" title="38">eg.Go(func() error </span><span class="cov10" title="38">{
+                        log.Printf("starting http server, listening on %s\n", httpServer.Addr)
+                        defer log.Printf("close http server listening on %s\n", httpServer.Addr)
+
+                        errCh := make(chan error)
+
+                        defer func() </span><span class="cov10" title="38">{
+                                shCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+                                defer cancel()
+
+                                if err := httpServer.Shutdown(shCtx); err != nil </span><span class="cov0" title="0">{
+                                        log.Printf("can't close http server listening on %s: %s", httpServer.Addr, err.Error())
+                                }</span>
+
+                                <span class="cov10" title="38">close(errCh)</span>
+                        }()
+
+                        <span class="cov10" title="38">go func() </span><span class="cov10" title="38">{
+                                if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
+                                        errCh &lt;- err
+                                }</span>
+                        }()
+
+                        <span class="cov10" title="38">select </span>{
+                        case &lt;-ctx.Done():<span class="cov10" title="38">
+                                return ctx.Err()</span>
+                        case err := &lt;-errCh:<span class="cov0" title="0">
+                                return fmt.Errorf("http server can't listen and serve requests: %w", err)</span>
+                        }
+                })
+
+                <span class="cov10" title="38">if err := eg.Wait(); err != nil </span><span class="cov10" title="38">{
+                        log.Printf("gracefully shutting down the servers: %s\n", err.Error())
+                }</span>
+
+                <span class="cov10" title="38">log.Println("servers were successfully shutdown")
+
+                ch &lt;- 0</span>
+        }()
+        <span class="cov10" title="38">time.Sleep(time.Millisecond * 30)
+        return httpServer, grpcServer</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: homework10/internal/app (interfaces: AdRepository)
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        ads "homework10/internal/ads"
+        reflect "reflect"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockAdRepository is a mock of AdRepository interface.
+type MockAdRepository struct {
+        ctrl     *gomock.Controller
+        recorder *MockAdRepositoryMockRecorder
+}
+
+// MockAdRepositoryMockRecorder is the mock recorder for MockAdRepository.
+type MockAdRepositoryMockRecorder struct {
+        mock *MockAdRepository
+}
+
+// NewMockAdRepository creates a new mock instance.
+func NewMockAdRepository(ctrl *gomock.Controller) *MockAdRepository <span class="cov1" title="1">{
+        mock := &amp;MockAdRepository{ctrl: ctrl}
+        mock.recorder = &amp;MockAdRepositoryMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAdRepository) EXPECT() *MockAdRepositoryMockRecorder <span class="cov9" title="6">{
+        return m.recorder
+}</span>
+
+// AppendAd mocks base method.
+func (m *MockAdRepository) AppendAd(arg0, arg1 string, arg2 int64) *ads.Ad <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "AppendAd", arg0, arg1, arg2)
+        ret0, _ := ret[0].(*ads.Ad)
+        return ret0
+}</span>
+
+// AppendAd indicates an expected call of AppendAd.
+func (mr *MockAdRepositoryMockRecorder) AppendAd(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendAd", reflect.TypeOf((*MockAdRepository)(nil).AppendAd), arg0, arg1, arg2)
+}</span>
+
+// ChangeAdStatus mocks base method.
+func (m *MockAdRepository) ChangeAdStatus(arg0 int64, arg1 bool) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "ChangeAdStatus", arg0, arg1)
+}</span>
+
+// ChangeAdStatus indicates an expected call of ChangeAdStatus.
+func (mr *MockAdRepositoryMockRecorder) ChangeAdStatus(arg0, arg1 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeAdStatus", reflect.TypeOf((*MockAdRepository)(nil).ChangeAdStatus), arg0, arg1)
+}</span>
+
+// DeleteAd mocks base method.
+func (m *MockAdRepository) DeleteAd(arg0 int64) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteAd", arg0)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// DeleteAd indicates an expected call of DeleteAd.
+func (mr *MockAdRepositoryMockRecorder) DeleteAd(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAd", reflect.TypeOf((*MockAdRepository)(nil).DeleteAd), arg0)
+}</span>
+
+// GetAdByID mocks base method.
+func (m *MockAdRepository) GetAdByID(arg0 int64) (*ads.Ad, error) <span class="cov10" title="7">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetAdByID", arg0)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetAdByID indicates an expected call of GetAdByID.
+func (mr *MockAdRepositoryMockRecorder) GetAdByID(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdByID", reflect.TypeOf((*MockAdRepository)(nil).GetAdByID), arg0)
+}</span>
+
+// Select mocks base method.
+func (m *MockAdRepository) Select(arg0 func(ads.Ad) bool) []ads.Ad <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Select", arg0)
+        ret0, _ := ret[0].([]ads.Ad)
+        return ret0
+}</span>
+
+// Select indicates an expected call of Select.
+func (mr *MockAdRepositoryMockRecorder) Select(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockAdRepository)(nil).Select), arg0)
+}</span>
+
+// UpdateAd mocks base method.
+func (m *MockAdRepository) UpdateAd(arg0 int64, arg1, arg2 string) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "UpdateAd", arg0, arg1, arg2)
+}</span>
+
+// UpdateAd indicates an expected call of UpdateAd.
+func (mr *MockAdRepositoryMockRecorder) UpdateAd(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAd", reflect.TypeOf((*MockAdRepository)(nil).UpdateAd), arg0, arg1, arg2)
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: homework10/internal/app (interfaces: App)
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        ads "homework10/internal/ads"
+        users "homework10/internal/users"
+        reflect "reflect"
+        time "time"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockApp is a mock of App interface.
+type MockApp struct {
+        ctrl     *gomock.Controller
+        recorder *MockAppMockRecorder
+}
+
+// MockAppMockRecorder is the mock recorder for MockApp.
+type MockAppMockRecorder struct {
+        mock *MockApp
+}
+
+// NewMockApp creates a new mock instance.
+func NewMockApp(ctrl *gomock.Controller) *MockApp <span class="cov1" title="1">{
+        mock := &amp;MockApp{ctrl: ctrl}
+        mock.recorder = &amp;MockAppMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockApp) EXPECT() *MockAppMockRecorder <span class="cov10" title="13">{
+        return m.recorder
+}</span>
+
+// ChangeAdStatus mocks base method.
+func (m *MockApp) ChangeAdStatus(arg0, arg1 int64, arg2 bool) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ChangeAdStatus", arg0, arg1, arg2)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ChangeAdStatus indicates an expected call of ChangeAdStatus.
+func (mr *MockAppMockRecorder) ChangeAdStatus(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeAdStatus", reflect.TypeOf((*MockApp)(nil).ChangeAdStatus), arg0, arg1, arg2)
+}</span>
+
+// CreateAd mocks base method.
+func (m *MockApp) CreateAd(arg0, arg1 string, arg2 int64) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CreateAd", arg0, arg1, arg2)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// CreateAd indicates an expected call of CreateAd.
+func (mr *MockAppMockRecorder) CreateAd(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAd", reflect.TypeOf((*MockApp)(nil).CreateAd), arg0, arg1, arg2)
+}</span>
+
+// CreateUser mocks base method.
+func (m *MockApp) CreateUser(arg0, arg1 string) *users.User <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
+        ret0, _ := ret[0].(*users.User)
+        return ret0
+}</span>
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockAppMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockApp)(nil).CreateUser), arg0, arg1)
+}</span>
+
+// DeleteAd mocks base method.
+func (m *MockApp) DeleteAd(arg0, arg1 int64) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteAd", arg0, arg1)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// DeleteAd indicates an expected call of DeleteAd.
+func (mr *MockAppMockRecorder) DeleteAd(arg0, arg1 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAd", reflect.TypeOf((*MockApp)(nil).DeleteAd), arg0, arg1)
+}</span>
+
+// DeleteUser mocks base method.
+func (m *MockApp) DeleteUser(arg0 int64) (*users.User, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteUser", arg0)
+        ret0, _ := ret[0].(*users.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockAppMockRecorder) DeleteUser(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockApp)(nil).DeleteUser), arg0)
+}</span>
+
+// FindByTitle mocks base method.
+func (m *MockApp) FindByTitle(arg0 string) []ads.Ad <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "FindByTitle", arg0)
+        ret0, _ := ret[0].([]ads.Ad)
+        return ret0
+}</span>
+
+// FindByTitle indicates an expected call of FindByTitle.
+func (mr *MockAppMockRecorder) FindByTitle(arg0 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByTitle", reflect.TypeOf((*MockApp)(nil).FindByTitle), arg0)
+}</span>
+
+// GetAdByID mocks base method.
+func (m *MockApp) GetAdByID(arg0 int64) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetAdByID", arg0)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetAdByID indicates an expected call of GetAdByID.
+func (mr *MockAppMockRecorder) GetAdByID(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdByID", reflect.TypeOf((*MockApp)(nil).GetAdByID), arg0)
+}</span>
+
+// GetUserByID mocks base method.
+func (m *MockApp) GetUserByID(arg0 int64) (*users.User, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetUserByID", arg0)
+        ret0, _ := ret[0].(*users.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetUserByID indicates an expected call of GetUserByID.
+func (mr *MockAppMockRecorder) GetUserByID(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockApp)(nil).GetUserByID), arg0)
+}</span>
+
+// Select mocks base method.
+func (m *MockApp) Select() []ads.Ad <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Select")
+        ret0, _ := ret[0].([]ads.Ad)
+        return ret0
+}</span>
+
+// Select indicates an expected call of Select.
+func (mr *MockAppMockRecorder) Select() *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockApp)(nil).Select))
+}</span>
+
+// SelectAll mocks base method.
+func (m *MockApp) SelectAll() []ads.Ad <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SelectAll")
+        ret0, _ := ret[0].([]ads.Ad)
+        return ret0
+}</span>
+
+// SelectAll indicates an expected call of SelectAll.
+func (mr *MockAppMockRecorder) SelectAll() *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAll", reflect.TypeOf((*MockApp)(nil).SelectAll))
+}</span>
+
+// SelectByAuthor mocks base method.
+func (m *MockApp) SelectByAuthor(arg0 int64) ([]ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SelectByAuthor", arg0)
+        ret0, _ := ret[0].([]ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// SelectByAuthor indicates an expected call of SelectByAuthor.
+func (mr *MockAppMockRecorder) SelectByAuthor(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByAuthor", reflect.TypeOf((*MockApp)(nil).SelectByAuthor), arg0)
+}</span>
+
+// SelectByCreation mocks base method.
+func (m *MockApp) SelectByCreation(arg0 time.Time) []ads.Ad <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SelectByCreation", arg0)
+        ret0, _ := ret[0].([]ads.Ad)
+        return ret0
+}</span>
+
+// SelectByCreation indicates an expected call of SelectByCreation.
+func (mr *MockAppMockRecorder) SelectByCreation(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByCreation", reflect.TypeOf((*MockApp)(nil).SelectByCreation), arg0)
+}</span>
+
+// UpdateAd mocks base method.
+func (m *MockApp) UpdateAd(arg0, arg1 int64, arg2, arg3 string) (*ads.Ad, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateAd", arg0, arg1, arg2, arg3)
+        ret0, _ := ret[0].(*ads.Ad)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// UpdateAd indicates an expected call of UpdateAd.
+func (mr *MockAppMockRecorder) UpdateAd(arg0, arg1, arg2, arg3 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAd", reflect.TypeOf((*MockApp)(nil).UpdateAd), arg0, arg1, arg2, arg3)
+}</span>
+
+// UpdateUser mocks base method.
+func (m *MockApp) UpdateUser(arg0 int64, arg1, arg2 string) (*users.User, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2)
+        ret0, _ := ret[0].(*users.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *MockAppMockRecorder) UpdateUser(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockApp)(nil).UpdateUser), arg0, arg1, arg2)
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: homework10/internal/app (interfaces: UserRepository)
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        users "homework10/internal/users"
+        reflect "reflect"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockUserRepository is a mock of UserRepository interface.
+type MockUserRepository struct {
+        ctrl     *gomock.Controller
+        recorder *MockUserRepositoryMockRecorder
+}
+
+// MockUserRepositoryMockRecorder is the mock recorder for MockUserRepository.
+type MockUserRepositoryMockRecorder struct {
+        mock *MockUserRepository
+}
+
+// NewMockUserRepository creates a new mock instance.
+func NewMockUserRepository(ctrl *gomock.Controller) *MockUserRepository <span class="cov1" title="1">{
+        mock := &amp;MockUserRepository{ctrl: ctrl}
+        mock.recorder = &amp;MockUserRepositoryMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder <span class="cov7" title="4">{
+        return m.recorder
+}</span>
+
+// AppendUser mocks base method.
+func (m *MockUserRepository) AppendUser(arg0, arg1 string) *users.User <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "AppendUser", arg0, arg1)
+        ret0, _ := ret[0].(*users.User)
+        return ret0
+}</span>
+
+// AppendUser indicates an expected call of AppendUser.
+func (mr *MockUserRepositoryMockRecorder) AppendUser(arg0, arg1 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendUser", reflect.TypeOf((*MockUserRepository)(nil).AppendUser), arg0, arg1)
+}</span>
+
+// DeleteUser mocks base method.
+func (m *MockUserRepository) DeleteUser(arg0 int64) (*users.User, error) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteUser", arg0)
+        ret0, _ := ret[0].(*users.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockUserRepositoryMockRecorder) DeleteUser(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserRepository)(nil).DeleteUser), arg0)
+}</span>
+
+// GetUserByID mocks base method.
+func (m *MockUserRepository) GetUserByID(arg0 int64) (*users.User, error) <span class="cov10" title="8">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetUserByID", arg0)
+        ret0, _ := ret[0].(*users.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetUserByID indicates an expected call of GetUserByID.
+func (mr *MockUserRepositoryMockRecorder) GetUserByID(arg0 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), arg0)
+}</span>
+
+// UpdateUser mocks base method.
+func (m *MockUserRepository) UpdateUser(arg0 int64, arg1, arg2 string) <span class="cov1" title="1">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2)
+}</span>
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *MockUserRepositoryMockRecorder) UpdateUser(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov1" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUserRepository)(nil).UpdateUser), arg0, arg1, arg2)
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package tests
+
+import (
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+
+        "strconv"
+        "time"
+)
+
+type adData struct {
+        ID           int64     `json:"id"`
+        Title        string    `json:"title"`
+        Text         string    `json:"text"`
+        AuthorID     int64     `json:"author_id"`
+        Published    bool      `json:"published"`
+        CreationTime time.Time `json:"creation_time"`
+        UpdateTime   time.Time `json:"update_time"`
+}
+
+type adResponse struct {
+        Data adData `json:"data"`
+}
+
+type adsResponse struct {
+        Data []adData `json:"data"`
+}
+
+type userData struct {
+        ID       int64  `json:"id"`
+        Nickname string `json:"nickname"`
+        Email    string `json:"email"`
+}
+
+type userResponse struct {
+        Data userData `json:"data"`
+}
+
+var (
+        ErrBadRequest = fmt.Errorf("bad request")
+        ErrForbidden  = fmt.Errorf("forbidden")
+        ErrNotFound   = fmt.Errorf("not found")
+)
+
+type testClient struct {
+        baseURL string
+}
+
+func getTestClient(adr string) *testClient <span class="cov7" title="38">{
+        return &amp;testClient{
+                baseURL: "http://localhost" + adr,
+        }
+}</span>
+
+func (tc *testClient) getResponse(req *http.Request, out any) error <span class="cov10" title="137">{
+        client := &amp;http.Client{}
+        resp, err := client.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unexpected error: %w", err)
+        }</span>
+
+        <span class="cov10" title="137">if resp.StatusCode != http.StatusOK </span><span class="cov6" title="16">{
+                if resp.StatusCode == http.StatusBadRequest </span><span class="cov5" title="10">{
+                        return ErrBadRequest
+                }</span>
+                <span class="cov4" title="6">if resp.StatusCode == http.StatusForbidden </span><span class="cov3" title="3">{
+                        return ErrForbidden
+                }</span>
+                <span class="cov3" title="3">if resp.StatusCode == http.StatusNotFound </span><span class="cov3" title="3">{
+                        return ErrNotFound
+                }</span>
+                <span class="cov0" title="0">return fmt.Errorf("unexpected status code: %s", resp.Status)</span>
+        }
+
+        <span class="cov9" title="121">respBody, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unable to read response: %w", err)
+        }</span>
+
+        <span class="cov9" title="121">err = json.Unmarshal(respBody, out)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unable to unmarshal: %w", err)
+        }</span>
+
+        <span class="cov9" title="121">return nil</span>
+}
+
+func (tc *testClient) createAd(userID int64, title string, text string) (adResponse, error) <span class="cov7" title="44">{
+        body := map[string]any{
+                "user_id": userID,
+                "title":   title,
+                "text":    text,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov7" title="44">req, err := http.NewRequest(http.MethodPost, tc.baseURL+"/api/v1/ads", bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov7" title="44">req.Header.Add("Content-Type", "application/json")
+
+        var response adResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov4" title="7">{
+                return adResponse{}, err
+        }</span>
+
+        <span class="cov7" title="37">return response, nil</span>
+}
+
+func (tc *testClient) changeAdStatus(userID int64, adID int64, published bool) (adResponse, error) <span class="cov5" title="12">{
+        body := map[string]any{
+                "user_id":   userID,
+                "published": published,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov5" title="12">req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d/status", adID), bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov5" title="12">req.Header.Add("Content-Type", "application/json")
+
+        var response adResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov1" title="1">{
+                return adResponse{}, err
+        }</span>
+
+        <span class="cov5" title="11">return response, nil</span>
+}
+
+func (tc *testClient) updateAd(userID int64, adID int64, title string, text string) (adResponse, error) <span class="cov4" title="7">{
+        body := map[string]any{
+                "user_id": userID,
+                "title":   title,
+                "text":    text,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov4" title="7">req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d", adID), bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov4" title="7">req.Header.Add("Content-Type", "application/json")
+
+        var response adResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov3" title="5">{
+                return adResponse{}, err
+        }</span>
+
+        <span class="cov2" title="2">return response, nil</span>
+}
+
+func (tc *testClient) listAds(r io.Reader) (adsResponse, error) <span class="cov6" title="16">{
+        req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads", r)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov6" title="16">var response adsResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, err
+        }</span>
+
+        <span class="cov6" title="16">return response, nil</span>
+}
+
+func (tc *testClient) createUser(nickname string, email string) (userResponse, error) <span class="cov7" title="40">{
+        body := map[string]any{
+                "nickname": nickname,
+                "email":    email,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov7" title="40">req, err := http.NewRequest(http.MethodPost, tc.baseURL+"/api/v1/users", bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov7" title="40">req.Header.Add("Content-Type", "application/json")
+
+        var response userResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, err
+        }</span>
+
+        <span class="cov7" title="40">return response, nil</span>
+}
+
+func (tc *testClient) updateUser(id int64, nickname string, email string) (userResponse, error) <span class="cov3" title="3">{
+        body := map[string]any{
+                "nickname": nickname,
+                "email":    email,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov3" title="3">req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", id), bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov3" title="3">req.Header.Add("Content-Type", "application/json")
+
+        var response userResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, err
+        }</span>
+
+        <span class="cov3" title="3">return response, nil</span>
+}
+
+func (tc *testClient) listAdsByAuthor(authorID int64) (adsResponse, error) <span class="cov3" title="5">{
+        body := map[string]any{
+                "by_author":     true,
+                "author_id":     authorID,
+                "by_creation":   false,
+                "creation_time": nil,
+                "all":           false,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov3" title="5">return tc.listAds(bytes.NewReader(data))</span>
+}
+
+func (tc *testClient) listAdsByTime(time time.Time) (adsResponse, error) <span class="cov3" title="5">{
+        body := map[string]any{
+                "by_author":     false,
+                "author_id":     -1,
+                "by_creation":   true,
+                "creation_time": time,
+                "all":           false,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov3" title="5">return tc.listAds(bytes.NewReader(data))</span>
+}
+
+func (tc *testClient) listAll() (adsResponse, error) <span class="cov3" title="3">{
+        body := map[string]any{
+                "by_author":     false,
+                "author_id":     -1,
+                "by_creation":   false,
+                "creation_time": nil,
+                "all":           true,
+        }
+
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, fmt.Errorf("unable to marshal: %w", err)
+        }</span>
+
+        <span class="cov3" title="3">return tc.listAds(bytes.NewReader(data))</span>
+}
+
+func (tc *testClient) getAd(adID int64) (adResponse, error) <span class="cov2" title="2">{
+
+        req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d", adID), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov2" title="2">req.Header.Add("Content-Type", "application/json")
+
+        var response adResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, err
+        }</span>
+
+        <span class="cov2" title="2">return response, nil</span>
+}
+
+func (tc *testClient) findAdByTitle(title string) (adsResponse, error) <span class="cov3" title="4">{
+        req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads/title?title="+title, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov3" title="4">req.Header.Add("Content-Type", "application/json")
+
+        var response adsResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return adsResponse{}, err
+        }</span>
+
+        <span class="cov3" title="4">return response, nil</span>
+}
+
+func (tc *testClient) GetUserByID(ID int64) (userResponse, error) <span class="cov2" title="2">{
+
+        req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", ID), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov2" title="2">req.Header.Add("Content-Type", "application/json")
+
+        var response userResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, err
+        }</span>
+
+        <span class="cov2" title="2">return response, nil</span>
+}
+
+func (tc *testClient) DeleteUser(ID int64) (userResponse, error) <span class="cov3" title="3">{
+
+        req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", ID), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov3" title="3">req.Header.Add("Content-Type", "application/json")
+
+        var response userResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov1" title="1">{
+                return userResponse{}, err
+        }</span>
+
+        <span class="cov2" title="2">return response, nil</span>
+}
+
+func (tc *testClient) DeleteAd(ID int64, authorID int64) (adResponse, error) <span class="cov3" title="4">{
+
+        author := strconv.FormatInt(authorID, 10)
+        req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d?author=%s", ID, author), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+        }</span>
+
+        <span class="cov3" title="4">req.Header.Add("Content-Type", "application/json")
+
+        var response adResponse
+        err = tc.getResponse(req, &amp;response)
+        if err != nil </span><span class="cov2" title="2">{
+                return adResponse{}, err
+        }</span>
+
+        <span class="cov2" title="2">return response, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package users
+
+type User struct {
+        ID       int64  `json:"id"`
+        Nickname string `json:"nickname"`
+        Email    string `json:"email"`
+}
+
+func CreateUser(id int64, nick string, email string) User <span class="cov10" title="48">{
+        return User{id, nick, email}
+}</span>
+
+func (u *User) UpdateNickname(n string) <span class="cov1" title="1">{
+        u.Nickname = n
+}</span>
+
+func (u *User) UpdateEmail(e string) <span class="cov2" title="2">{
+        u.Email = e
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

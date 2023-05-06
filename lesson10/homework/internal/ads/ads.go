@@ -28,5 +28,5 @@ func (a *Ad) UpdateTitle(title string) {
 
 func (a *Ad) UpdateText(text string) {
 	a.Text = text
-	a.UpdateTime = time.Now()
+	a.UpdateTime = time.Now().UTC()
 }
