@@ -34,47 +34,57 @@ func TestServerUsingTable(t *testing.T) {
 	lea, err := httpclient.createUser("Lea", "lea.skywalker@mail.com")
 	assert.NoError(t, err)
 
-	ad1, err := httpclient.createAd(anakin.Data.ID, "Letter to Luke", "I am your father!")
+	var ad_data = []struct {
+		id int64
+		title string
+		text string
+	}{
+		{anakin.Data.ID, "Letter to Luke", "I am your father!"},
+		{anakin.Data.ID, "Letter to Lea", "I find your lack of faith disturbing"},
+		{lea.Data.ID, "No", "I'd just as soon kiss a Wookiee"},
+		{luke.Data.ID, "Hello from Yoda", "Do, or do not. There is no try."},
+		{lea.Data.ID, "May the Force be with you", "Star wars day"},
+		{luke.Data.ID, "May the Force be with you", "Star wars day"},
+	}
+
+	var ads []adResponse
+	for _, d := range(ad_data) {
+		ad, err := httpclient.createAd(d.id, d.title, d.text)
+		assert.NoError(t, err)
+		_, err = httpclient.changeAdStatus(ad.Data.AuthorID, ad.Data.ID, true)
+		assert.NoError(t, err)
+		ads = append(ads, ad)
+	}
+
+	_, err = httpclient.changeAdStatus(ads[3].Data.AuthorID, ads[3].Data.ID, false)
 	assert.NoError(t, err)
-	_, err = httpclient.changeAdStatus(ad1.Data.AuthorID, ad1.Data.ID, true)
-	assert.NoError(t, err)
-	ad2, err := httpclient.createAd(anakin.Data.ID, "Letter to Lea", "I find your lack of faith disturbing")
-	assert.NoError(t, err)
-	_, err = httpclient.changeAdStatus(ad2.Data.AuthorID, ad2.Data.ID, true)
-	assert.NoError(t, err)
-	ad3, err := httpclient.createAd(lea.Data.ID, "No", "I'd just as soon kiss a Wookiee")
-	assert.NoError(t, err)
-	_, err = httpclient.changeAdStatus(ad3.Data.AuthorID, ad3.Data.ID, true)
-	assert.NoError(t, err)
-	ad4, err := httpclient.createAd(luke.Data.ID, "Hello from Yoda", "Do, or do not. There is no try.")
-	assert.NoError(t, err)
-	ad5, err := httpclient.createAd(lea.Data.ID, "May the Force be with you", "Star wars day")
-	assert.NoError(t, err)
-	ad6, err := httpclient.createAd(luke.Data.ID, "May the Force be with you", "Star wars day")
-	assert.NoError(t, err)
-	_, err = httpclient.changeAdStatus(ad6.Data.AuthorID, ad6.Data.ID, true)
+	_, err = httpclient.changeAdStatus(ads[4].Data.AuthorID, ads[4].Data.ID, false)
 	assert.NoError(t, err)
 
-	ads, err := httpclient.listAds(nil)
-	assert.NoError(t, err)
-	assert.Equal(t, len(ads.Data), 4)
-
-	ads, err = httpclient.listAll()
-	assert.NoError(t, err)
-	assert.Equal(t, len(ads.Data), 6)
-
-	adsg, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_Default})
-	assert.NoError(t, err)
-	assert.Len(t, adsg.List, 4)
-
-	adsg, err = grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_All})
-	assert.NoError(t, err)
-	assert.Len(t, adsg.List, 6)
-
-	_, err = httpclient.changeAdStatus(ad4.Data.AuthorID, ad4.Data.ID, true)
-	assert.NoError(t, err)
-	_, err = httpclient.changeAdStatus(ad5.Data.AuthorID, ad5.Data.ID, true)
-	assert.NoError(t, err)
+	t.Run("Default list using http", func(t *testing.T) {
+		ads_resp, err := httpclient.listAds(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, len(ads_resp.Data), 4)
+	})
+	
+	t.Run("List all using http", func(t *testing.T) {
+		ads_resp, err := httpclient.listAll()
+		assert.NoError(t, err)
+		assert.Equal(t, len(ads_resp.Data), 6)
+	})
+	
+	t.Run("Default list using grpc", func(t *testing.T) {
+		ads_resp_grpc, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_Default})
+		assert.NoError(t, err)
+		assert.Len(t, ads_resp_grpc.List, 4)
+	})
+	
+	t.Run("List all using grpc", func(t *testing.T) {
+		ads_resp_grpc, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_All})
+		assert.NoError(t, err)
+		assert.Len(t, ads_resp_grpc.List, 6)
+	})
+	
 
 	var byAuthorSearchTest = []struct {
 		author int64
@@ -88,9 +98,9 @@ func TestServerUsingTable(t *testing.T) {
 		creationTime time.Time
 		expLen       int
 	}{
-		{ad1.Data.CreationTime, 5},
-		{ad3.Data.CreationTime, 3},
-		{ad5.Data.CreationTime, 1},
+		{ads[0].Data.CreationTime, 5},
+		{ads[2].Data.CreationTime, 3},
+		{ads[4].Data.CreationTime, 1},
 	}
 	var byTitleSearchTest = []struct {
 		title  string
@@ -101,37 +111,53 @@ func TestServerUsingTable(t *testing.T) {
 		{"Death", 0},
 	}
 
-	for _, tt := range byAuthorSearchTest {
-		res, err := httpclient.listAdsByAuthor(tt.author)
-		assert.NoError(t, err)
-		assert.Len(t, res.Data, tt.expLen)
-	}
-	for _, tt := range byDateSearchTest {
-		res, err := httpclient.listAdsByTime(tt.creationTime)
-		assert.NoError(t, err)
-		assert.Len(t, res.Data, tt.expLen)
-	}
-	for _, tt := range byTitleSearchTest {
-		res, err := httpclient.findAdByTitle(tt.title)
-		assert.NoError(t, err)
-		assert.Len(t, res.Data, tt.expLen)
-	}
-
-	for _, tt := range byAuthorSearchTest {
-		res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByAuthor, Data: &grpcPort.Mode_AuthorId{AuthorId: tt.author}})
-		assert.NoError(t, err)
-		assert.Len(t, res.List, tt.expLen)
-	}
-	for _, tt := range byDateSearchTest {
-		res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByCreation, Data: &grpcPort.Mode_Time{Time: timestamppb.New(tt.creationTime)}})
-		assert.NoError(t, err)
-		assert.Len(t, res.List, tt.expLen)
-	}
-	for _, tt := range byTitleSearchTest {
-		res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByTitle, Data: &grpcPort.Mode_Title{Title: tt.title}})
-		assert.NoError(t, err)
-		assert.Len(t, res.List, tt.expLen)
-	}
+	t.Run("Search by author using http", func(t *testing.T) {
+		for _, tt := range byAuthorSearchTest {
+			res, err := httpclient.listAdsByAuthor(tt.author)
+			assert.NoError(t, err)
+			assert.Len(t, res.Data, tt.expLen)
+		}
+	})
+	
+	t.Run("Search by date using http", func(t *testing.T) {
+		for _, tt := range byDateSearchTest {
+			res, err := httpclient.listAdsByTime(tt.creationTime)
+			assert.NoError(t, err)
+			assert.Len(t, res.Data, tt.expLen)
+		}
+	})
+	
+	t.Run("Search by title using http", func(t *testing.T) {
+		for _, tt := range byTitleSearchTest {
+			res, err := httpclient.findAdByTitle(tt.title)
+			assert.NoError(t, err)
+			assert.Len(t, res.Data, tt.expLen)
+		}
+	})
+	
+	t.Run("Search by author using grpc", func(t *testing.T) {
+		for _, tt := range byAuthorSearchTest {
+			res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByAuthor, Data: &grpcPort.Mode_AuthorId{AuthorId: tt.author}})
+			assert.NoError(t, err)
+			assert.Len(t, res.List, tt.expLen)
+		}
+	})
+	
+	t.Run("Search by date using grpc", func(t *testing.T) {
+		for _, tt := range byDateSearchTest {
+			res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByCreation, Data: &grpcPort.Mode_Time{Time: timestamppb.New(tt.creationTime)}})
+			assert.NoError(t, err)
+			assert.Len(t, res.List, tt.expLen)
+		}
+	})
+	
+	t.Run("Search by title using grpc", func(t *testing.T) {
+		for _, tt := range byTitleSearchTest {
+			res, err := grpcclient.ListAds(context.Background(), &grpcPort.Mode{Mode: grpcPort.ModeType_ByTitle, Data: &grpcPort.Mode_Title{Title: tt.title}})
+			assert.NoError(t, err)
+			assert.Len(t, res.List, tt.expLen)
+		}
+	})
 
 	cf()
 	<-endChan
