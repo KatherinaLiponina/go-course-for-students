@@ -60,13 +60,17 @@ const (
 )
 
 func CreateServer(ctx context.Context, ch chan int) (*http.Server, *grpc.Server) {
+	a := app.NewApp(adrepo.New(), userrepo.New())
+	return CreateServerWithExternalApp(ctx, ch, a)
+}
+
+func CreateServerWithExternalApp(ctx context.Context, ch chan int, a app.App) (*http.Server, *grpc.Server) {
 
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	a := app.NewApp(adrepo.New(), userrepo.New())
 	httpServer := NewHTTPServer(httpPort, a)
 	grpcServer := NewGRPCServer(grpcPort, a)
 

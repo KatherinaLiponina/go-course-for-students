@@ -4,6 +4,7 @@ import (
 	"errors"
 	"homework10/internal/ads"
 	"homework10/internal/users"
+	"strings"
 	"time"
 
 	"github.com/KatherinaLiponina/validation"
@@ -159,7 +160,7 @@ func (a *app) UpdateUser(ID int64, nickname string, email string) (*users.User, 
 
 func (a *app) FindByTitle(Title string) []ads.Ad {
 	return a.adrepo.Select(func(a ads.Ad) bool {
-		return a.Title == Title
+		return strings.Contains(a.Title, Title)
 	})
 }
 

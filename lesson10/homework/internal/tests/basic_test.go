@@ -1,256 +1,281 @@
 package tests
 
 import (
+	"context"
+	"net/http"
 	"testing"
 
+	"homework10/internal/ports"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateUser(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-
-	response, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.ID, int64(0))
-	assert.Equal(t, response.Data.Nickname, "Jane")
-	assert.Equal(t, response.Data.Email, "jane.doe@gmail.com")
-	response, err = client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.ID, int64(1))
+type BasicTestSuite struct {
+	suite.Suite
+	hsrv *http.Server
+	cf   context.CancelFunc
+	ch   chan int
+	t    *testing.T
 }
 
-func TestGetUser(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) SetupTest() {
+	ctx, cf := context.WithCancel(context.Background())
+	suite.cf = cf
+	endChan := make(chan int)
+	suite.ch = endChan
+	suite.hsrv, _ = ports.CreateServer(ctx, endChan)
+}
 
-	resp, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TearDownTest() {
+	suite.cf()
+	<-suite.ch
+}
+
+func TestBasicTestSuite(t *testing.T) {
+	bts := new(BasicTestSuite)
+	bts.t = t
+	suite.Run(t, bts)
+}
+
+func (suite *BasicTestSuite) TestCreateUser() {
+	client := getTestClient(suite.hsrv.Addr)
+	response, err := client.createUser("Alice", "alice.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, int64(0))
+	assert.Equal(suite.t, response.Data.Nickname, "Alice")
+	assert.Equal(suite.t, response.Data.Email, "alice.doe@gmail.com")
+	response, err = client.createUser("Bob", "bob.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, int64(1))
+}
+
+func (suite *BasicTestSuite) TestGetUser() {
+	client := getTestClient(suite.hsrv.Addr)
+
+	resp, err := client.createUser("David", "david.doe@gmail.com")
+	assert.NoError(suite.t, err)
 	response, err := client.GetUserByID(resp.Data.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.ID, resp.Data.ID)
-	assert.Equal(t, response.Data.Nickname, resp.Data.Nickname)
-	assert.Equal(t, response.Data.Email, resp.Data.Email)
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, resp.Data.ID)
+	assert.Equal(suite.t, response.Data.Nickname, resp.Data.Nickname)
+	assert.Equal(suite.t, response.Data.Email, resp.Data.Email)
 }
 
-func TestDeleteUser(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) TestDeleteUser() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	resp, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+	resp, err := client.createUser("Harry", "harry.doe@gmail.com")
+	assert.NoError(suite.t, err)
 	response, err := client.DeleteUser(resp.Data.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.ID, resp.Data.ID)
-	assert.Equal(t, response.Data.Nickname, resp.Data.Nickname)
-	assert.Equal(t, response.Data.Email, resp.Data.Email)
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, resp.Data.ID)
+	assert.Equal(suite.t, response.Data.Nickname, resp.Data.Nickname)
+	assert.Equal(suite.t, response.Data.Email, resp.Data.Email)
 	response, err = client.DeleteUser(resp.Data.ID)
-	assert.ErrorIs(t, err, ErrNotFound)
+	assert.ErrorIs(suite.t, err, ErrNotFound)
 }
 
-func TestDeleteAd(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) TestDeleteAd() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	_, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
-	resp2, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Carol", "carol.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	resp2, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 	resp3, err := client.DeleteAd(resp2.Data.ID, resp2.Data.AuthorID)
-	assert.NoError(t, err)
-	assert.Equal(t, resp2.Data.ID, resp3.Data.ID)
-	assert.Equal(t, resp2.Data.AuthorID, resp3.Data.AuthorID)
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, resp2.Data.ID, resp3.Data.ID)
+	assert.Equal(suite.t, resp2.Data.AuthorID, resp3.Data.AuthorID)
 	_, err = client.DeleteAd(resp2.Data.ID, resp2.Data.AuthorID)
-	assert.ErrorIs(t, err, ErrNotFound)
+	assert.ErrorIs(suite.t, err, ErrNotFound)
 }
 
-func TestUpdateUser(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	response, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
-	response, err = client.updateUser(response.Data.ID, "", "new.mail@yandex.ru")
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.ID, int64(0))
-	assert.Equal(t, response.Data.Nickname, "Jane")
-	assert.Equal(t, response.Data.Email, "new.mail@yandex.ru")
+func (suite *BasicTestSuite) TestUpdateUser() {
+	client := getTestClient(suite.hsrv.Addr)
+
+	response_old, err := client.createUser("Eva", "eva.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	response, err := client.updateUser(response_old.Data.ID, "", "new.mail@yandex.ru")
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, response_old.Data.ID)
+	assert.Equal(suite.t, response.Data.Nickname, "Eva")
+	assert.Equal(suite.t, response.Data.Email, "new.mail@yandex.ru")
+
+	response, err = client.updateUser(response_old.Data.ID, "NewEva", "new.mail@yandex.ru")
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.ID, response_old.Data.ID)
+	assert.Equal(suite.t, response.Data.Nickname, "NewEva")
 }
 
-func TestCreateAd(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) TestCreateAd() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+	_, err := client.createUser("Franc", "franc.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	usr, err := client.createUser("Georg", "georg.doe@gmail.com")
+	assert.NoError(suite.t, err)
 
 	response, err := client.createAd(1, "hello", "world")
-	assert.NoError(t, err)
-	assert.Zero(t, response.Data.ID)
-	assert.Equal(t, response.Data.Title, "hello")
-	assert.Equal(t, response.Data.Text, "world")
-	assert.Equal(t, response.Data.AuthorID, int64(1))
-	assert.False(t, response.Data.Published)
+	assert.NoError(suite.t, err)
+	assert.Zero(suite.t, response.Data.ID)
+	assert.Equal(suite.t, response.Data.Title, "hello")
+	assert.Equal(suite.t, response.Data.Text, "world")
+	assert.Equal(suite.t, response.Data.AuthorID, usr.Data.ID)
+	assert.False(suite.t, response.Data.Published)
 }
 
-func TestChangeAdStatus(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) TestChangeAdStatus() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Irma", "irma.doe@gmail.com")
+	assert.NoError(suite.t, err)
 
-	response, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
+	response, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 
-	response, err = client.changeAdStatus(0, response.Data.ID, true)
-	assert.NoError(t, err)
-	assert.True(t, response.Data.Published)
+	response, err = client.changeAdStatus(usr.Data.ID, response.Data.ID, true)
+	assert.NoError(suite.t, err)
+	assert.True(suite.t, response.Data.Published)
 
-	response, err = client.changeAdStatus(0, response.Data.ID, false)
-	assert.NoError(t, err)
-	assert.False(t, response.Data.Published)
+	response, err = client.changeAdStatus(usr.Data.ID, response.Data.ID, false)
+	assert.NoError(suite.t, err)
+	assert.False(suite.t, response.Data.Published)
 
-	response, err = client.changeAdStatus(0, response.Data.ID, false)
-	assert.NoError(t, err)
-	assert.False(t, response.Data.Published)
+	response, err = client.changeAdStatus(usr.Data.ID, response.Data.ID, false)
+	assert.NoError(suite.t, err)
+	assert.False(suite.t, response.Data.Published)
 }
 
-func TestUpdateAd(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
+func (suite *BasicTestSuite) TestUpdateAd() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Jane", "john.doe@gmail.com")
+	assert.NoError(suite.t, err)
 
-	response, err := client.createAd(1, "hello", "world")
-	assert.NoError(t, err)
+	response, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 
-	response, err = client.updateAd(1, response.Data.ID, "привет", "мир")
-	assert.NoError(t, err)
-	assert.Equal(t, response.Data.Title, "привет")
-	assert.Equal(t, response.Data.Text, "мир")
+	response, err = client.updateAd(usr.Data.ID, response.Data.ID, "привет", "мир")
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, response.Data.Title, "привет")
+	assert.Equal(suite.t, response.Data.Text, "мир")
 }
 
-func TestListAds(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestListAds() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	response, err := client.createAd(1, "hello", "world")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Kate", "kate.doe@gmail.com")
+	assert.NoError(suite.t, err)
 
-	publishedAd, err := client.changeAdStatus(1, response.Data.ID, true)
-	assert.NoError(t, err)
+	response, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 
-	_, err = client.createAd(1, "best cat", "not for sale")
-	assert.NoError(t, err)
+	publishedAd, err := client.changeAdStatus(usr.Data.ID, response.Data.ID, true)
+	assert.NoError(suite.t, err)
+
+	_, err = client.createAd(usr.Data.ID, "best cat", "not for sale")
+	assert.NoError(suite.t, err)
 
 	ads, err := client.listAds(nil)
-	assert.NoError(t, err)
-	assert.Len(t, ads.Data, 1)
-	assert.Equal(t, ads.Data[0].ID, publishedAd.Data.ID)
-	assert.Equal(t, ads.Data[0].Title, publishedAd.Data.Title)
-	assert.Equal(t, ads.Data[0].Text, publishedAd.Data.Text)
-	assert.Equal(t, ads.Data[0].AuthorID, publishedAd.Data.AuthorID)
-	assert.True(t, ads.Data[0].Published)
+	assert.NoError(suite.t, err)
+	assert.Len(suite.t, ads.Data, int(1))
+	assert.Equal(suite.t, ads.Data[0].ID, publishedAd.Data.ID)
+	assert.Equal(suite.t, ads.Data[0].Title, publishedAd.Data.Title)
+	assert.Equal(suite.t, ads.Data[0].Text, publishedAd.Data.Text)
+	assert.Equal(suite.t, ads.Data[0].AuthorID, publishedAd.Data.AuthorID)
+	assert.True(suite.t, ads.Data[0].Published)
 }
 
-func TestListAdsByAuthor(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestListAdsByAuthor() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	ad, _ := client.createAd(1, "hello", "world")
-	_, err = client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
-	_, err = client.createAd(1, "world", "hello")
-	assert.NoError(t, err)
+	usr1, err := client.createUser("Lisa", "lisa.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	usr2, err := client.createUser("Mary", "mary.doe@gmail.com")
+	assert.NoError(suite.t, err)
 
-	ads, err := client.listAdsByAuthor(1)
-	assert.NoError(t, err)
-	assert.Len(t, ads.Data, 2)
-	assert.Equal(t, ads.Data[0].AuthorID, ad.Data.AuthorID)
-	assert.Equal(t, ads.Data[1].AuthorID, ad.Data.AuthorID)
+	ad, _ := client.createAd(usr2.Data.ID, "hello", "world")
+	_, err = client.createAd(usr1.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
+	_, err = client.createAd(usr2.Data.ID, "world", "hello")
+	assert.NoError(suite.t, err)
+
+	ads, err := client.listAdsByAuthor(usr2.Data.ID)
+	assert.NoError(suite.t, err)
+	assert.Len(suite.t, ads.Data, 2)
+	assert.Equal(suite.t, ads.Data[0].AuthorID, ad.Data.AuthorID)
+	assert.Equal(suite.t, ads.Data[1].AuthorID, ad.Data.AuthorID)
 }
 
-func TestListAdsByTime(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestListAdsByTime() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	ad1, err := client.createAd(1, "hello", "world")
-	assert.NoError(t, err)
-	ad2, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
+	usr1, err := client.createUser("Nansy", "nansy.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	usr2, err := client.createUser("Olga", "olga.doe@gmail.com")
+	assert.NoError(suite.t, err)
+
+	ad1, err := client.createAd(usr2.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
+	ad2, err := client.createAd(usr1.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 
 	ads, err := client.listAdsByTime(ad1.Data.CreationTime)
-	assert.NoError(t, err)
-	assert.Len(t, ads.Data, 1)
-	assert.Equal(t, ads.Data[0].ID, ad2.Data.ID)
-	assert.Equal(t, ads.Data[0].Title, ad2.Data.Title)
-	assert.Equal(t, ads.Data[0].Text, ad2.Data.Text)
-	assert.Equal(t, ads.Data[0].AuthorID, ad2.Data.AuthorID)
+	assert.NoError(suite.t, err)
+	assert.Len(suite.t, ads.Data, 1)
+	assert.Equal(suite.t, ads.Data[0].ID, ad2.Data.ID)
+	assert.Equal(suite.t, ads.Data[0].Title, ad2.Data.Title)
+	assert.Equal(suite.t, ads.Data[0].Text, ad2.Data.Text)
+	assert.Equal(suite.t, ads.Data[0].AuthorID, ad2.Data.AuthorID)
 }
 
-func TestListAll(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("John", "john.doe@gmail.com")
-	assert.NoError(t, err)
-	_, err = client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestListAll() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	_, err = client.createAd(1, "hello", "world")
-	assert.NoError(t, err)
-	_, err = client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
+	usr1, err := client.createUser("Peter", "peter.doe@gmail.com")
+	assert.NoError(suite.t, err)
+	usr2, err := client.createUser("Rosa", "rosa.doe@gmail.com")
+	assert.NoError(suite.t, err)
+
+	_, err = client.createAd(usr2.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
+	_, err = client.createAd(usr1.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 
 	ads, err := client.listAll()
-	assert.NoError(t, err)
-	assert.Len(t, ads.Data, 2)
+	assert.NoError(suite.t, err)
+	assert.Len(suite.t, ads.Data, 2)
 }
 
-func TestGetAdById(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestGetAdById() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	ad, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Sally", "sally.doe@gmail.com")
+	assert.NoError(suite.t, err)
+
+	ad, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
 	adAgain, err := client.getAd(ad.Data.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, ad.Data.ID, adAgain.Data.ID)
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, ad.Data.ID, adAgain.Data.ID)
 }
 
-func TestFindByName(t *testing.T) {
-	client := getTestClient()
-	defer client.cancelTestClient()
-	_, err := client.createUser("Jane", "jane.doe@gmail.com")
-	assert.NoError(t, err)
+func (suite *BasicTestSuite) TestFindByName() {
+	client := getTestClient(suite.hsrv.Addr)
 
-	ad, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
-	_, err = client.createAd(0, "hello", "mir")
-	assert.NoError(t, err)
-	_, err = client.createAd(0, "hallo", "welt")
-	assert.NoError(t, err)
+	usr, err := client.createUser("Tuomas", "tuomas.doe@gmail.com")
+	assert.NoError(suite.t, err)
+
+	ad, err := client.createAd(usr.Data.ID, "hello", "world")
+	assert.NoError(suite.t, err)
+	_, err = client.createAd(usr.Data.ID, "hello", "mir")
+	assert.NoError(suite.t, err)
+	_, err = client.createAd(usr.Data.ID, "hallo", "welt")
+	assert.NoError(suite.t, err)
 	arr, err := client.findAdByTitle(ad.Data.Title)
-	assert.NoError(t, err)
-	assert.Len(t, arr.Data, 2)
-	assert.Equal(t, arr.Data[0].Title, ad.Data.Title)
-	assert.Equal(t, arr.Data[1].Title, ad.Data.Title)
+	assert.NoError(suite.t, err)
+	assert.Len(suite.t, arr.Data, 2)
+	assert.Equal(suite.t, arr.Data[0].Title, ad.Data.Title)
+	assert.Equal(suite.t, arr.Data[1].Title, ad.Data.Title)
 }

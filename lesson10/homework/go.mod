@@ -9,6 +9,13 @@ require (
 )
 
 require (
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
+)
+
+require (
 	github.com/KatherinaLiponina/validation v1.2.3
 	github.com/bytedance/sonic v1.8.7 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
